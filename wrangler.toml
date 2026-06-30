@@ -5,3 +5,14 @@ compatibility_date = "2024-11-01"
 # The Discord webhook is a SECRET, not committed here. Set it once with:
 #   npx wrangler secret put DISCORD_WEBHOOK_URL
 # (paste the webhook URL of your #bug-reports channel when prompted)
+
+# Per-IP rate limit (anti-flood). namespace_id is just an identifier; period must be 10 or 60.
+# 10 reports/min per IP — generous for a real server (the plugin already caps each player), tight
+# enough to stop someone hammering the endpoint directly. Tune the limit here as needed.
+[[ratelimits]]
+name = "REPORT_LIMITER"
+namespace_id = "1001"
+
+[ratelimits.simple]
+limit = 10
+period = 60

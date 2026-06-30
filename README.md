@@ -39,9 +39,12 @@ a secret). The plugin just POSTs reports to the Worker's public URL; the Worker 
    ```
    (Send me the URL and I'll bake it in as the default so no server needs to configure it.)
 
-### Recommended: enable rate limiting
-In the Cloudflare dashboard add a Rate Limiting rule on the Worker route (e.g. 5 requests/min per IP)
-so the public endpoint can't be flooded.
+### Anti-spam (built in)
+Two layers, no setup needed:
+- **Per player:** the plugin enforces a cooldown (`bug-reports.cooldown-seconds`, default 60s) so one
+  player can't spam reports.
+- **Per IP:** this Worker uses a Cloudflare rate-limit binding (`[[ratelimits]]` in `wrangler.toml`,
+  10 reports/min per IP) so the endpoint can't be hammered directly. Tune the `limit` there.
 
 ## Later: always-on community bot
 

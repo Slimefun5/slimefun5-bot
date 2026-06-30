@@ -17,6 +17,13 @@ export default {
     if (url.pathname !== '/report') return json({ error: 'not_found' }, 404);
     if (!env.DISCORD_WEBHOOK_URL) return json({ error: 'unconfigured' }, 503);
 
+    // Per-IP rate limit (anti-flood). Guarded so the Worker still runs if the binding is absent.
+    if (env.REPORT_LIMITER) {
+      const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const { success } = await env.REPORT_LIMITER.limit({ key: ip });
+      if (!success) return json({ error: 'rate_limited' }, 429);
+    }
+
     let body;
     try {
       body = await request.json();
