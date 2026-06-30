@@ -15,14 +15,14 @@ import { handleInteraction, postReportTo } from './src/commands.js';
 const FORWARD_TIMEOUT_MS = 1800;
 
 export default {
-  async fetch (request, env) {
+  async fetch (request, env, ctx) {
     const url = new URL(request.url);
 
     if (request.method === 'POST' && url.pathname === '/report') {
       return handleReport(request, env);
     }
     if (request.method === 'POST' && url.pathname === '/interactions') {
-      return handleInteractions(request, env);
+      return handleInteractions(request, env, ctx);
     }
     return json({ error: 'not_found' }, 404);
   }
@@ -59,7 +59,7 @@ async function handleReport (request, env) {
   return ok ? json({ ok: true, via: 'worker' }, 200) : json({ error: 'discord_failed' }, 502);
 }
 
-async function handleInteractions (request, env) {
+async function handleInteractions (request, env, ctx) {
   const signature = request.headers.get('X-Signature-Ed25519');
   const timestamp = request.headers.get('X-Signature-Timestamp');
   const raw = await request.text();
@@ -71,16 +71,32 @@ async function handleInteractions (request, env) {
   const interaction = JSON.parse(raw);
   if (interaction.type === 1) return json({ type: 1 });
 
-  const forwarded = await forwardToGateway(env, '/interactions', raw);
-  if (forwarded) {
-    return new Response(await forwarded.text(), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  if (interaction.type === 2) {
+    // ACK within Discord's 3s window, then do the work + edit the reply in (15-min follow-up window).
+    ctx.waitUntil(respondToCommand(interaction, env));
+    return json({ type: 5 });
   }
 
-  const response = await handleInteraction(interaction, {
-    env,
-    postReport: (report) => postReportTo(env.DISCORD_WEBHOOK_URL, report)
-  });
-  return json(response);
+  return json({ type: 4, data: { content: 'Unsupported interaction.' } });
+}
+
+async function respondToCommand (interaction, env) {
+  let content = '⚠️ Something went wrong handling that command.';
+  try {
+    const response = await handleInteraction(interaction, {
+      env,
+      postReport: (report) => postReportTo(env.DISCORD_WEBHOOK_URL, report)
+    });
+    content = response?.data?.content || content;
+  } catch (e) {
+    content = '⚠️ ' + (e?.message || 'error');
+  }
+
+  await fetch(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, allowed_mentions: { parse: [] } })
+  }).catch(() => {});
 }
 
 /** Forwards a request to the VM gateway when configured + reachable; returns the Response or null. */
