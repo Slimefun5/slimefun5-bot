@@ -49,13 +49,18 @@ Per-IP rate limiting is built in (`[[ratelimits]]` in `wrangler.toml`).
 3. Point the Worker at it: set the Worker's `GATEWAY_URL` to this VM's public URL. Now everything
    flows through the VM while it's up, and falls back to Cloudflare when it isn't.
 
-### Free always-on hosts (Oracle excluded)
-- **Koyeb** — free instance; connect this GitHub repo, it builds from the `Dockerfile` and redeploys
-  on push. Set the env vars + expose the port. Copy the app URL into the Worker's `GATEWAY_URL`.
-  Simplest GitHub sync.
-- **Fly.io** — free allowance; `fly launch` (detects the `Dockerfile`) + `fly secrets set …`, deploy
-  from GitHub via a small Actions workflow (`flyctl deploy`).
-- Avoid Render's free web service (it sleeps → drops the gateway).
+### Free always-on hosts (Oracle & Koyeb excluded)
+The host must be always-on **and** expose a public URL (so the Worker can forward to it), which rules
+out the free Discord-bot hosts (no inbound URL).
+- **Render (free web service) + a keep-alive pinger** — no card. Deploys this repo's `Dockerfile`,
+  gives a public `*.onrender.com` URL, auto-deploys on push. Render sleeps on idle, so add a free
+  uptime pinger (UptimeRobot) hitting `/health` every 5 min to keep the gateway connected. Recommended.
+- **Fly.io** — `fly launch` (detects the `Dockerfile`); always-on, public `*.fly.dev` URL, deploy from
+  GitHub via Actions. Needs a card on file (small free allowance).
+- **Home machine + Cloudflare Tunnel** — fully free if you have any always-on box; the tunnel gives the
+  public URL for `GATEWAY_URL`.
+
+Whichever you pick, put its public URL into the Worker's `GATEWAY_URL`.
 
 ## Moderation without the VM
 Discord's built-in **AutoMod** covers scam-link and invite blocking natively (no bot). Use it
