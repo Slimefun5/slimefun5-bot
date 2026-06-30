@@ -80,3 +80,48 @@ export const commands = {
 export function commandDefinitions() {
   return Object.values(commands).map((c) => c.definition);
 }
+
+/** Builds the Discord message content for a bug report. */
+export function formatReport ({ title, description, plugins, meta }) {
+  const list = Array.isArray(plugins) ? plugins.join(', ') : (plugins || '(unspecified)');
+  return `**Bug Report: ${title || '(no title)'}**\n**Plugins:** ${list}\n`
+    + (meta ? meta + '\n' : '') + '\n' + (description || '(no description)');
+}
+
+/** Posts a formatted report to a Discord webhook. Returns whether it succeeded. */
+export async function postReportTo (webhookUrl, fields) {
+  if (!webhookUrl) return false;
+  const resp = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: formatReport(fields).slice(0, 2000), allowed_mentions: { parse: [] } })
+  });
+  return resp.ok;
+}
+
+/** Runs a Discord interaction against the shared commands; returns the Discord response object. */
+export async function handleInteraction (interaction, { env, postReport }) {
+  if (interaction.type === 1) return { type: 1 };
+
+  if (interaction.type === 2) {
+    const command = commands[interaction.data.name];
+    if (!command) return reply('Unknown command.');
+
+    const options = {};
+    for (const option of interaction.data.options || []) options[option.name] = option.value;
+    const author = interaction.member?.user?.username || interaction.user?.username || 'someone';
+
+    const ctx = {
+      env,
+      getString: (name) => (options[name] != null ? String(options[name]) : ''),
+      postReport: (report) => postReport({ ...report, meta: `**By:** ${author} (Discord)` })
+    };
+    return reply(await command.run(ctx));
+  }
+
+  return reply('Unsupported interaction.');
+}
+
+function reply (content) {
+  return { type: 4, data: { content, allowed_mentions: { parse: [] } } };
+}

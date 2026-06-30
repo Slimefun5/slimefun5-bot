@@ -1,15 +1,18 @@
-// Slimefun5 bot — Cloudflare Worker entry (no VM).
+// Slimefun5 bot — Cloudflare Worker entry (the front door).
 //
-//   POST /report        in-game bug reports from the plugin (relayed to #bug-reports)
-//   POST /interactions  Discord slash commands (HTTP Interactions; Ed25519-verified)
+//   POST /report        in-game bug reports from the plugin
+//   POST /interactions  Discord slash commands (Ed25519-verified)
 //
-// Secrets (set in the Worker): DISCORD_WEBHOOK_URL (#bug-reports), DISCORD_PUBLIC_KEY (app public key).
-// The Node gateway entry (gateway.js) reuses the same commands and adds message filters on a VM.
+// Routing: when GATEWAY_URL is set AND the VM gateway is reachable, BOTH routes are forwarded to it
+// (so everything goes through the VM). If GATEWAY_URL is unset or the VM is down, the Worker handles
+// it itself via Cloudflare. Automatic failover, no plugin/Discord reconfig needed.
+//
+// Secrets/vars: DISCORD_WEBHOOK_URL (#bug-reports), DISCORD_PUBLIC_KEY (app public key),
+//               GATEWAY_URL (the VM's public URL, optional), RELAY_KEY (shared secret, optional).
 
-import { commands } from './src/commands.js';
+import { handleInteraction, postReportTo } from './src/commands.js';
 
-const MAX_MESSAGE = 1800;
-const MAX_FIELD = 80;
+const FORWARD_TIMEOUT_MS = 1800;
 
 export default {
   async fetch (request, env) {
@@ -26,7 +29,7 @@ export default {
 };
 
 async function handleReport (request, env) {
-  if (!env.DISCORD_WEBHOOK_URL) return json({ error: 'unconfigured' }, 503);
+  if (!env.GATEWAY_URL && !env.DISCORD_WEBHOOK_URL) return json({ error: 'unconfigured' }, 503);
 
   if (env.REPORT_LIMITER) {
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -34,27 +37,26 @@ async function handleReport (request, env) {
     if (!success) return json({ error: 'rate_limited' }, 429);
   }
 
+  const raw = await request.text();
+
+  const forwarded = await forwardToGateway(env, '/report', raw);
+  if (forwarded) return json({ ok: true, via: 'gateway' }, 200);
+
   let body;
   try {
-    body = await request.json();
+    body = JSON.parse(raw);
   } catch {
     return json({ error: 'bad_json' }, 400);
   }
 
   const title = clean(body.title, 120);
-  const description = clean(body.description, MAX_MESSAGE);
+  const description = clean(body.description, 1800);
   const plugins = pluginList(body.plugins);
-
   if (!title && !description) return json({ error: 'empty_report' }, 400);
 
-  const ok = await postReport(env, {
-    title,
-    description,
-    plugins,
-    meta: `**Player:** ${clean(body.player, MAX_FIELD) || 'unknown'}  **Slimefun:** ${clean(body.sfVersion, MAX_FIELD) || '?'}  **MC:** ${clean(body.mcVersion, MAX_FIELD) || '?'}`
-  });
-
-  return ok ? json({ ok: true }, 200) : json({ error: 'discord_failed' }, 502);
+  const meta = `**Player:** ${clean(body.player, 80) || 'unknown'}  **Slimefun:** ${clean(body.sfVersion, 80) || '?'}  **MC:** ${clean(body.mcVersion, 80) || '?'}`;
+  const ok = await postReportTo(env.DISCORD_WEBHOOK_URL, { title, description, plugins, meta });
+  return ok ? json({ ok: true, via: 'worker' }, 200) : json({ error: 'discord_failed' }, 502);
 }
 
 async function handleInteractions (request, env) {
@@ -67,45 +69,40 @@ async function handleInteractions (request, env) {
   }
 
   const interaction = JSON.parse(raw);
-
   if (interaction.type === 1) return json({ type: 1 });
 
-  if (interaction.type === 2) {
-    const command = commands[interaction.data.name];
-    if (!command) return reply('Unknown command.');
-
-    const options = {};
-    for (const option of interaction.data.options || []) options[option.name] = option.value;
-    const author = (interaction.member && interaction.member.user && interaction.member.user.username) || (interaction.user && interaction.user.username) || 'someone';
-
-    const ctx = {
-      env,
-      getString: (name) => (options[name] != null ? String(options[name]) : ''),
-      postReport: (report) => postReport(env, { ...report, meta: `**By:** ${author} (Discord)` })
-    };
-
-    const content = await command.run(ctx);
-    return reply(content);
+  const forwarded = await forwardToGateway(env, '/interactions', raw);
+  if (forwarded) {
+    return new Response(await forwarded.text(), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 
-  return reply('Unsupported interaction.');
+  const response = await handleInteraction(interaction, {
+    env,
+    postReport: (report) => postReportTo(env.DISCORD_WEBHOOK_URL, report)
+  });
+  return json(response);
 }
 
-async function postReport (env, report) {
-  if (!env.DISCORD_WEBHOOK_URL) return false;
+/** Forwards a request to the VM gateway when configured + reachable; returns the Response or null. */
+async function forwardToGateway (env, path, rawBody) {
+  if (!env.GATEWAY_URL) return null;
 
-  const plugins = Array.isArray(report.plugins) ? report.plugins.join(', ') : (report.plugins || '(unspecified)');
-  const content = `**Bug Report: ${report.title || '(no title)'}**\n`
-    + `**Plugins:** ${plugins}\n`
-    + (report.meta ? report.meta + '\n' : '')
-    + '\n' + (report.description || '(no description)');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FORWARD_TIMEOUT_MS);
 
-  const resp = await fetch(env.DISCORD_WEBHOOK_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: content.slice(0, 2000), allowed_mentions: { parse: [] } })
-  });
-  return resp.ok;
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (env.RELAY_KEY) headers['X-Relay-Key'] = env.RELAY_KEY;
+
+    const resp = await fetch(env.GATEWAY_URL.replace(/\/$/, '') + path, {
+      method: 'POST', headers, body: rawBody, signal: controller.signal
+    });
+    return resp.ok ? resp : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function pluginList (value) {
@@ -132,10 +129,6 @@ function hex (str) {
 function clean (value, max) {
   if (typeof value !== 'string') return '';
   return value.replace(/[`@]/g, '').trim().slice(0, max);
-}
-
-function reply (content) {
-  return json({ type: 4, data: { content, allowed_mentions: { parse: [] } } });
 }
 
 function json (obj, status = 200) {
