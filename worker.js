@@ -18,6 +18,9 @@ export default {
   async fetch (request, env, ctx) {
     const url = new URL(request.url);
 
+    if (request.method === 'GET' && url.pathname === '/') {
+      return json({ service: 'slimefun5-bot', build: 'defer-2026-07-01', deferred: true });
+    }
     if (request.method === 'POST' && url.pathname === '/report') {
       return handleReport(request, env);
     }
