@@ -31,18 +31,21 @@ export default {
       return json({ error: 'bad_json' }, 400);
     }
 
-    const target = clean(body.target, MAX_FIELD);
+    const title = clean(body.title, 120);
+    const description = clean(body.description, MAX_MESSAGE);
+    const plugins = Array.isArray(body.plugins)
+      ? body.plugins.map(x => clean(x, 40)).filter(Boolean).slice(0, 25).join(', ')
+      : clean(body.plugins, 200);
     const player = clean(body.player, MAX_FIELD);
     const sf = clean(body.sfVersion, MAX_FIELD);
     const mc = clean(body.mcVersion, MAX_FIELD);
-    const message = clean(body.message, MAX_MESSAGE);
 
-    if (!message) return json({ error: 'empty_message' }, 400);
+    if (!title && !description) return json({ error: 'empty_report' }, 400);
 
-    const content = `**Bug Report — ${target || 'Slimefun'}**\n`
-      + `**Player:** ${player || 'unknown'}\n`
-      + `**Slimefun:** ${sf || '?'}  **MC:** ${mc || '?'}\n\n`
-      + message;
+    const content = `**Bug Report: ${title || '(no title)'}**\n`
+      + `**Plugins:** ${plugins || '(unspecified)'}\n`
+      + `**Player:** ${player || 'unknown'}  **Slimefun:** ${sf || '?'}  **MC:** ${mc || '?'}\n\n`
+      + (description || '(no description)');
 
     const resp = await fetch(env.DISCORD_WEBHOOK_URL, {
       method: 'POST',
