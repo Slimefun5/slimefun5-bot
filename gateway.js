@@ -10,7 +10,7 @@
 
 import http from 'node:http';
 import { Client, Events, GatewayIntentBits } from 'discord.js';
-import { handleInteraction, postReportTo } from './src/commands.js';
+import { commandDefinitions, handleInteraction, postReportTo } from './src/commands.js';
 
 const env = { GITHUB_OWNER: process.env.GITHUB_OWNER || 'Slimefun5' };
 const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -26,7 +26,22 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-client.once(Events.ClientReady, (c) => console.log(`Slimefun5 bot online as ${c.user.tag}`));
+client.once(Events.ClientReady, async (c) => {
+  console.log(`Slimefun5 bot online as ${c.user.tag}`);
+  try {
+    const guildId = process.env.DISCORD_GUILD_ID;
+    if (guildId) {
+      const guild = await c.guilds.fetch(guildId);
+      await guild.commands.set(commandDefinitions());
+      console.log('Registered guild slash commands');
+    } else {
+      await c.application.commands.set(commandDefinitions());
+      console.log('Registered global slash commands');
+    }
+  } catch (e) {
+    console.error('command registration failed', e);
+  }
+});
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
