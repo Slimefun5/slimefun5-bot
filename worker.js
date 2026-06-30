@@ -99,11 +99,18 @@ async function respondToCommand (interaction, env) {
     content = '⚠️ ' + (e?.message || 'error');
   }
 
-  await fetch(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content, allowed_mentions: { parse: [] } })
-  }).catch(() => {});
+  const url = `https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`;
+  try {
+    const resp = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, allowed_mentions: { parse: [] } })
+    });
+    console.log(`followup: status=${resp.status} appId=${interaction.application_id ? 'yes' : 'NO'} content="${content}"`);
+    if (!resp.ok) console.log('followup error body: ' + (await resp.text()));
+  } catch (e) {
+    console.log('followup threw: ' + (e && e.message ? e.message : e));
+  }
 }
 
 /** Forwards a request to the VM gateway when configured + reachable; returns the Response or null. */
