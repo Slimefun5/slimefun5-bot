@@ -59,7 +59,17 @@ client.on(Events.MessageCreate, async (message) => {
   }
 });
 
-client.login(process.env.DISCORD_BOT_TOKEN);
+client.on(Events.Error, (e) => console.error('Discord client error:', e?.message || e));
+
+// The gateway is best-effort: if it can't connect (e.g. the Message Content Intent isn't enabled in
+// the Developer Portal), keep the HTTP relay below alive so reports/commands still work. The message
+// filters need that intent, so enable it to turn them on.
+process.on('uncaughtException', (e) => console.error('uncaughtException (continuing):', e?.message || e));
+process.on('unhandledRejection', (e) => console.error('unhandledRejection (continuing):', e?.message || e));
+
+client.login(process.env.DISCORD_BOT_TOKEN).catch((e) =>
+  console.error('Gateway login failed — message filters are off until the Message Content Intent is enabled.', e?.message || e)
+);
 
 // 2) HTTP server — what the Worker forwards to (and the host's health check).
 const postReport = (report) => postReportTo(webhookUrl, report);
