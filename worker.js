@@ -67,11 +67,15 @@ async function handleInteractions (request, env, ctx) {
   const timestamp = request.headers.get('X-Signature-Timestamp');
   const raw = await request.text();
 
-  if (!env.DISCORD_PUBLIC_KEY || !signature || !timestamp || !(await verify(raw, signature, timestamp, env.DISCORD_PUBLIC_KEY))) {
+  const verified = !!(env.DISCORD_PUBLIC_KEY && signature && timestamp && await verify(raw, signature, timestamp, env.DISCORD_PUBLIC_KEY));
+  console.log(`/interactions hit: hasKey=${!!env.DISCORD_PUBLIC_KEY} hasSig=${!!signature} verified=${verified}`);
+
+  if (!verified) {
     return new Response('bad request signature', { status: 401 });
   }
 
   const interaction = JSON.parse(raw);
+  console.log(`/interactions: type=${interaction.type} command=${interaction.data && interaction.data.name}`);
   if (interaction.type === 1) return json({ type: 1 });
 
   if (interaction.type === 2) {
