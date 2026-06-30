@@ -26,22 +26,38 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-client.once(Events.ClientReady, async (c) => {
-  console.log(`Slimefun5 bot online as ${c.user.tag}`);
+client.once(Events.ClientReady, (c) => console.log(`Gateway connected as ${c.user.tag} — message filters active`));
+
+// Register slash commands over REST, independent of the gateway, so commands work (via the Worker's
+// HTTP interactions) even if the gateway can't connect (e.g. Message Content Intent not yet enabled).
+async function registerCommands () {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  if (!token) return;
+
   try {
+    const me = await fetch('https://discord.com/api/v10/applications/@me', { headers: { Authorization: `Bot ${token}` } });
+    if (!me.ok) { console.error('App lookup failed:', me.status, await me.text()); return; }
+    const appId = (await me.json()).id;
+
     const guildId = process.env.DISCORD_GUILD_ID;
-    if (guildId) {
-      const guild = await c.guilds.fetch(guildId);
-      await guild.commands.set(commandDefinitions());
-      console.log('Registered guild slash commands');
-    } else {
-      await c.application.commands.set(commandDefinitions());
-      console.log('Registered global slash commands');
-    }
+    const url = guildId
+      ? `https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`
+      : `https://discord.com/api/v10/applications/${appId}/commands`;
+
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(commandDefinitions())
+    });
+    console.log(res.ok
+      ? `Registered ${guildId ? 'guild (instant)' : 'global (up to 1h to appear)'} slash commands`
+      : `Command registration failed: ${res.status} ${await res.text()}`);
   } catch (e) {
-    console.error('command registration failed', e);
+    console.error('Command registration error:', e?.message || e);
   }
-});
+}
+
+registerCommands();
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
