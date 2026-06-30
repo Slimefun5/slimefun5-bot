@@ -1,0 +1,14 @@
+{
+  "name": "slimefun5-bot",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker for the Slimefun5 community Discord — relays in-game bug reports to Discord (and, later, build notifications + slash commands). The Discord webhook is stored as a Worker secret, never shipped in the plugin jar.",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3"
+  }
+}

@@ -1,0 +1,7 @@
+name = "slimefun5-bot"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# The Discord webhook is a SECRET, not committed here. Set it once with:
+#   npx wrangler secret put DISCORD_WEBHOOK_URL
+# (paste the webhook URL of your #bug-reports channel when prompted)
