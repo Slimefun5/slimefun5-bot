@@ -1,53 +1,50 @@
 # Slimefun5 Bot
 
-The shared Slimefun5 service. Today it relays in-game bug reports into our Discord; builds
-notifications and the always-on community bot will be folded in here over time.
+The Slimefun5 community Discord bot. **One repo, two ways to run it:**
 
-## Why a relay (and not a webhook in the plugin)
+| Run mode | How | Features |
+|----------|-----|----------|
+| **Cloudflare Worker** (no VM) | `worker.js` | In-game bug-report relay + slash commands |
+| **Node gateway** (on a VM) | `gateway.js` | Everything above **plus** live message filters / auto-replies |
 
-A public plugin jar can't keep a secret — anyone could extract a baked-in webhook URL and spam the
-channel, with no way to rate-limit or rotate it. So the Discord webhook lives only in this Worker (as
-a secret). The plugin just POSTs reports to the Worker's public URL; the Worker forwards them to our
-`#bug-reports`. Every server hits **our** Discord, with nothing sensitive shipped to operators.
+Both share the slash commands in `src/commands.js`. The message filters (anti-invite, the
+"It's Slimefun, not …" auto-reply) need a persistent gateway connection, so they only run in the VM
+mode — a Worker can't read message content.
 
-## Bug-report relay (Cloudflare Worker — free tier)
+## Slash commands
+`/ping` · `/version` · `/wiki <term>` · `/addon <name>` · `/report <title> <description> [plugin]`
 
-### One-time setup
-1. In Discord: Server Settings → Integrations → Webhooks → New Webhook on your `#bug-reports`
-   channel → Copy Webhook URL.
-2. Deploy the Worker — pick **one** path:
+## Mode A — Cloudflare Worker (no VM)
 
-   **Option A — Cloudflare dashboard (no install, recommended):**
-   - Dashboard → Workers & Pages → Create → Create Worker → name it `slimefun5-bot` → Deploy the
-     starter, then Edit code and paste the contents of `worker.js` → Deploy.
-   - On the Worker: Settings → Variables and Secrets → add a **Secret** named `DISCORD_WEBHOOK_URL`
-     = your `#bug-reports` webhook URL → Save and deploy.
+Handles `POST /report` (the plugin relay) and `POST /interactions` (slash commands).
 
-   **Option B — wrangler CLI (needs Node.js; good for repeatable deploys):**
-   ```sh
-   npm install -g wrangler        # or prefix commands with: npx
-   wrangler login
-   wrangler secret put DISCORD_WEBHOOK_URL   # paste the webhook URL when prompted
-   wrangler deploy
-   ```
-3. Either way you get a URL like `https://slimefun5-bot.<you>.workers.dev`. The plugin endpoint is that
-   URL + `/report`. Put it in the Slimefun config:
-   ```yaml
-   bug-reports:
-     enabled: true
-     relay-url: 'https://slimefun5-bot.<you>.workers.dev/report'
-   ```
-   (Send me the URL and I'll bake it in as the default so no server needs to configure it.)
+1. **Deploy** — connect this repo in Cloudflare → Workers & Pages → Create → Connect to Git (uses
+   `wrangler.toml`; auto-deploys on push).
+2. **Secrets** (Worker → Settings → Variables and Secrets):
+   - `DISCORD_WEBHOOK_URL` — your `#bug-reports` channel webhook.
+   - `DISCORD_PUBLIC_KEY` — the Discord application's public key (only needed for slash commands).
+3. **Register the commands** once (locally): `DISCORD_APP_ID=… DISCORD_BOT_TOKEN=… node register.js`
+4. In the Discord Developer Portal, set the app's **Interactions Endpoint URL** to
+   `https://slimefun5-bot.<you>.workers.dev/interactions`.
 
-### Anti-spam (built in)
-Two layers, no setup needed:
-- **Per player:** the plugin enforces a cooldown (`bug-reports.cooldown-seconds`, default 60s) so one
-  player can't spam reports.
-- **Per IP:** this Worker uses a Cloudflare rate-limit binding (`[[ratelimits]]` in `wrangler.toml`,
-  10 reports/min per IP) so the endpoint can't be hammered directly. Tune the `limit` there.
+Per-IP rate limiting is built in (`[[ratelimits]]` in `wrangler.toml`).
 
-## Later: always-on community bot
+## Mode B — Node gateway (VM, all features)
 
-Slash commands need a persistent Discord gateway connection, which Workers can't hold. When we build
-that, it goes on a free always-on VM (e.g. Oracle Cloud Free Tier) running this same Node codebase;
-the Worker stays as the lightweight report-ingestion front door.
+1. Set env: `DISCORD_BOT_TOKEN` (required), `DISCORD_WEBHOOK_URL` (#bug-reports), `GITHUB_OWNER` (optional).
+2. `npm install && node register.js` (once) then `node gateway.js` — or use the `Dockerfile`.
+
+### Free always-on hosts (Oracle excluded)
+- **Koyeb** — free instance; connect this GitHub repo, it builds from the `Dockerfile` and redeploys
+  on push. Set the env vars in the service. Simplest GitHub sync.
+- **Fly.io** — free allowance; `fly launch` (detects the `Dockerfile`) + `fly secrets set …`, deploy
+  from GitHub via a small Actions workflow (`flyctl deploy`).
+- Avoid Render's free web service (it sleeps → drops the gateway).
+
+## Moderation without the VM
+Discord's built-in **AutoMod** covers scam-link and invite blocking natively (no bot). Use it
+alongside Mode A if you don't run the VM; Mode B adds the conversational auto-replies on top.
+
+## Anti-spam
+- Per player: the plugin enforces a report cooldown (`bug-reports.cooldown-seconds`).
+- Per IP: the Worker rate-limits `/report` (10/min/IP).
