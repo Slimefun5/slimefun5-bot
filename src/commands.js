@@ -96,7 +96,11 @@ export const commands = {
           { name: 'name', description: 'Tag name', type: STRING_OPTION, required: true },
           { name: 'content', description: 'Reply text — use \\n for line breaks', type: STRING_OPTION, required: true }
         ] },
-        { name: 'delete', description: 'Delete a tag (staff)', type: SUB_COMMAND, options: [{ name: 'name', description: 'Tag name', type: STRING_OPTION, required: true }] }
+        { name: 'alias', description: 'Point an alias at an existing tag (staff)', type: SUB_COMMAND, options: [
+          { name: 'name', description: 'The alias', type: STRING_OPTION, required: true },
+          { name: 'target', description: 'The tag it points to', type: STRING_OPTION, required: true }
+        ] },
+        { name: 'delete', description: 'Delete a tag and its aliases (staff)', type: SUB_COMMAND, options: [{ name: 'name', description: 'Tag name', type: STRING_OPTION, required: true }] }
       ]
     },
     async run(ctx) {
@@ -104,12 +108,23 @@ export const commands = {
       const name = tagName(ctx.getString('name'));
 
       if (ctx.subcommand === 'list') {
-        const names = (await ctx.store.list('tag:')).map((k) => k.slice(4));
-        return names.length ? 'Tags: ' + names.map((n) => `\`${n}\``).join(', ') : 'No tags yet.';
+        const names = (await ctx.store.list('tag:')).map((k) => k.slice(4)).sort();
+        if (!names.length) return 'No tags yet.';
+        const aliasKeys = await ctx.store.list('alias:');
+        const aliasesByTarget = {};
+        for (const key of aliasKeys) {
+          const target = tagName(await ctx.store.get(key));
+          (aliasesByTarget[target] ||= []).push(key.slice(6));
+        }
+        const lines = names.map((n) => {
+          const aliases = aliasesByTarget[n];
+          return `\`${n}\`` + (aliases?.length ? ` (${aliases.map((a) => `\`${a}\``).join(', ')})` : '');
+        });
+        return `Available tags (${names.length}):\n` + lines.join(', ');
       }
       if (ctx.subcommand === 'get') {
         if (!name) return 'Please give a tag name.';
-        return (await ctx.store.get('tag:' + name)) || `Tag \`${name}\` not found.`;
+        return (await resolveTag(ctx.store, name)) || `Tag \`${name}\` not found.`;
       }
 
       if (!ctx.isStaff) return '⛔ You need moderator permissions to manage tags.';
@@ -120,10 +135,23 @@ export const commands = {
         await ctx.store.put('tag:' + name, content);
         return `✅ Tag \`${name}\` saved.`;
       }
+      if (ctx.subcommand === 'alias') {
+        const target = tagName(ctx.getString('target'));
+        if (!name || !target) return 'Both an alias and a target are required.';
+        if (!(await ctx.store.get('tag:' + target))) return `Target tag \`${target}\` does not exist.`;
+        await ctx.store.put('alias:' + name, target);
+        return `✅ Alias \`${name}\` → \`${target}\` created.`;
+      }
       if (ctx.subcommand === 'delete') {
-        if (!(await ctx.store.get('tag:' + name))) return `Tag \`${name}\` does not exist.`;
+        const existed = await ctx.store.get('tag:' + name);
+        const wasAlias = await ctx.store.get('alias:' + name);
+        if (!existed && !wasAlias) return `Tag \`${name}\` does not exist.`;
         await ctx.store.delete('tag:' + name);
-        return `🗑️ Tag \`${name}\` deleted.`;
+        await ctx.store.delete('alias:' + name);
+        for (const key of await ctx.store.list('alias:')) {
+          if (tagName(await ctx.store.get(key)) === name) await ctx.store.delete(key);
+        }
+        return `🗑️ Tag \`${name}\` and its aliases deleted.`;
       }
       return 'Unknown subcommand.';
     }
@@ -173,6 +201,16 @@ export const commands = {
 /** Normalizes a tag name to a safe, lowercase key fragment. */
 function tagName (raw) {
   return (raw || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+}
+
+/** Resolves a tag name to its content, following one alias hop; returns null if unknown. */
+export async function resolveTag (store, raw) {
+  const name = tagName(raw);
+  if (!store || !name) return null;
+  const direct = await store.get('tag:' + name);
+  if (direct != null) return direct;
+  const target = await store.get('alias:' + name);
+  return target ? await store.get('tag:' + tagName(target)) : null;
 }
 
 /** Registration payload (array of command definitions) for the Discord API. */

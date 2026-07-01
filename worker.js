@@ -10,7 +10,7 @@
 // Secrets/vars: DISCORD_WEBHOOK_URL (#bug-reports), DISCORD_PUBLIC_KEY (app public key),
 //               GATEWAY_URL (the VM's public URL, optional), RELAY_KEY (shared secret, optional).
 
-import { handleInteraction, postReportTo } from './src/commands.js';
+import { handleInteraction, postReportTo, resolveTag } from './src/commands.js';
 
 const FORWARD_TIMEOUT_MS = 1800;
 
@@ -121,7 +121,7 @@ async function respondToCommand (interaction, env) {
 async function handleTagLookup (url, env) {
   const name = (url.searchParams.get('name') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
   if (!env.TAGS || !name) return json({ error: 'not_found' }, 404);
-  const content = await env.TAGS.get('tag:' + name);
+  const content = await resolveTag(makeStore(env), name);
   return content ? json({ name, content }) : json({ error: 'not_found' }, 404);
 }
 
