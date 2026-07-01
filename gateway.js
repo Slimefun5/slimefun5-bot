@@ -9,17 +9,52 @@
 //      PORT (Koyeb/Fly set this), RELAY_KEY (optional shared secret matching the Worker).
 
 import http from 'node:http';
-import { Client, Events, GatewayIntentBits } from 'discord.js';
+import { Client, Events, GatewayIntentBits, PermissionsBitField } from 'discord.js';
 import { commandDefinitions, handleInteraction, postReportTo } from './src/commands.js';
 
 const env = { GITHUB_OWNER: process.env.GITHUB_OWNER || 'Slimefun5' };
 const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 const relayKey = process.env.RELAY_KEY;
+const workerUrl = process.env.WORKER_URL;
 const PORT = process.env.PORT || 8080;
 
-const SLIMEFUN = /Slime(?:F|( f))un/;
-const INVITE = /discord\.gg\/([A-Za-z0-9]+)/i;
+const SLIMEFUN = /[Ss]lime(?:F|( [Ff]))un/;
+const INVITE = /discord(?:app\.com\/invite|\.gg)\/([A-Za-z0-9]+)/i;
 const OUR_INVITE = 'cbbyzbewdr';
+const TAG = /^\?([a-z0-9_-]{1,32})$/i;
+
+const SCAM_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
+const INVITE_TIMEOUT_MS = 60 * 60 * 1000;
+
+// Scam-link domains, refreshed from public block-lists on startup.
+const scamDomains = new Set();
+const SCAM_LISTS = [
+  'https://raw.githubusercontent.com/Discord-AntiScam/scam-links/main/list.txt',
+  'https://raw.githubusercontent.com/BuildBot42/discord-scam-links/main/list.txt'
+];
+
+async function loadScamDomains () {
+  for (const url of SCAM_LISTS) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      for (const line of (await res.text()).split('\n')) {
+        const domain = line.trim().toLowerCase();
+        if (domain && !domain.startsWith('#')) scamDomains.add(domain);
+      }
+    } catch (e) {
+      console.error('Scam list load failed:', url, e?.message || e);
+    }
+  }
+  console.log(`Loaded ${scamDomains.size} scam domains`);
+}
+
+loadScamDomains();
+
+async function timeoutMember (member, ms, reason) {
+  if (!member) return;
+  try { await member.timeout(ms, reason); } catch { /* missing perms or higher role */ }
+}
 
 // 1) Gateway client — message filters / auto-replies (need a persistent connection).
 const client = new Client({
@@ -61,17 +96,45 @@ registerCommands();
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
+  const content = message.content;
 
-  const invite = message.content.match(INVITE);
-  if (invite && invite[1].toLowerCase() !== OUR_INVITE) {
-    await message.delete().catch(() => {});
-    await message.channel.send(`${message.author}, please don't post other server invites here.`).catch(() => {});
+  // Moderators are exempt from the removal filters.
+  const isStaff = message.member?.permissions?.has(PermissionsBitField.Flags.ManageMessages) ?? false;
+
+  if (!isStaff) {
+    const lower = content.toLowerCase();
+    if (scamDomains.size && [...scamDomains].some((domain) => lower.includes(domain))) {
+      await message.delete().catch(() => {});
+      await timeoutMember(message.member, SCAM_TIMEOUT_MS, 'Scam link');
+      await message.channel.send(`${message.author}, that looked like a scam link — it was removed.`).catch(() => {});
+      return;
+    }
+
+    const invite = content.match(INVITE);
+    if (invite && invite[1].toLowerCase() !== OUR_INVITE) {
+      await message.delete().catch(() => {});
+      await timeoutMember(message.member, INVITE_TIMEOUT_MS, 'Invite link');
+      await message.channel.send(`${message.author}, please don't post other server invites here.`).catch(() => {});
+      return;
+    }
+  }
+
+  const match = SLIMEFUN.exec(content);
+  if (match && match[0] !== 'Slimefun') {
+    await message.reply(`It's Slimefun, not ${match[0]} 🙂`).catch(() => {});
     return;
   }
 
-  const match = SLIMEFUN.exec(message.content);
-  if (match && match[0] !== 'Slimefun') {
-    await message.reply(`It's Slimefun, not ${match[0]} 🙂`).catch(() => {});
+  // Tag lookup: `?name` replies with the stored tag content (fetched from the Worker's KV store).
+  const tag = content.trim().match(TAG);
+  if (tag && workerUrl) {
+    try {
+      const res = await fetch(`${workerUrl.replace(/\/$/, '')}/tag?name=${encodeURIComponent(tag[1].toLowerCase())}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.content) await message.reply(data.content).catch(() => {});
+      }
+    } catch { /* worker unreachable — ignore */ }
   }
 });
 

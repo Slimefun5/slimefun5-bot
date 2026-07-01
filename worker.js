@@ -21,6 +21,9 @@ export default {
     if (request.method === 'GET' && url.pathname === '/') {
       return json({ service: 'slimefun5-bot', build: 'defer-2026-07-01', deferred: true });
     }
+    if (request.method === 'GET' && url.pathname === '/tag') {
+      return handleTagLookup(url, env);
+    }
     if (request.method === 'POST' && url.pathname === '/report') {
       return handleReport(request, env);
     }
@@ -92,7 +95,8 @@ async function respondToCommand (interaction, env) {
   try {
     const response = await handleInteraction(interaction, {
       env,
-      postReport: (report) => postReportTo(env.DISCORD_WEBHOOK_URL, report)
+      postReport: (report) => postReportTo(env.DISCORD_WEBHOOK_URL, report),
+      store: makeStore(env)
     });
     content = response?.data?.content || content;
   } catch (e) {
@@ -111,6 +115,25 @@ async function respondToCommand (interaction, env) {
   } catch (e) {
     console.log('followup threw: ' + (e && e.message ? e.message : e));
   }
+}
+
+/** Returns the content of a stored tag by name, for the gateway's `?name` chat lookups. */
+async function handleTagLookup (url, env) {
+  const name = (url.searchParams.get('name') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  if (!env.TAGS || !name) return json({ error: 'not_found' }, 404);
+  const content = await env.TAGS.get('tag:' + name);
+  return content ? json({ name, content }) : json({ error: 'not_found' }, 404);
+}
+
+/** Wraps the TAGS KV namespace in the small store interface the shared commands expect (null if unbound). */
+function makeStore (env) {
+  if (!env.TAGS) return null;
+  return {
+    get: (key) => env.TAGS.get(key),
+    put: (key, value) => env.TAGS.put(key, value),
+    delete: (key) => env.TAGS.delete(key),
+    list: async (prefix) => (await env.TAGS.list({ prefix })).keys.map((k) => k.name)
+  };
 }
 
 /** Forwards a request to the VM gateway when configured + reachable; returns the Response or null. */
