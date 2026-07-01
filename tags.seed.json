@@ -120,10 +120,6 @@
     "value": "🏷️ **Looking for a server host?**\nNote: we don't own or endorse any host listed here — do your own research. These are based on personal experience.\nShared hosting: https://shockbyte.com/ · https://nodecraft.com/ · https://mcprohosting.com/\nVPS (more control — secure it yourself): https://vultr.com/ · https://digitalocean.com/ · https://scaleway.com/\nDedicated: https://online.net/ · https://ovh.com/ · https://rackspace.com/"
   },
   {
-    "key": "tag:zip-file-closed",
-    "value": "🏷️ **\"zip file closed\" issue**\nThis is usually caused by a plugin failing to load while the server still tries to access its resources. Check your startup logs to find what failed to load, and send all related startup logs via https://pastebin.com/ so we can investigate."
-  },
-  {
     "key": "tag:changelog",
     "value": "🏷️ **Changelog**\nSee the release changelog here: https://github.com/Slimefun5/Slimefun5/releases"
   },
@@ -146,66 +142,6 @@
   {
     "key": "tag:versions",
     "value": "🏷️ **Slimefun – versions & download**\nThis fork runs on Minecraft **1.8 through 26.x from a single universal jar** — one download works across every supported version, no separate builds per Minecraft version.\nDownload the latest release: https://github.com/Slimefun5/Slimefun5/releases\nDevelopment builds are produced automatically from the latest commits."
-  },
-  {
-    "key": "alias:download",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1.21",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1.21.1",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1.21.2",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1.21.3",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1.21.4",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1.21.5",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1.21.6",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1.21.7",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1.21.8",
-    "value": "versions"
-  },
-  {
-    "key": "alias:blob",
-    "value": "versions"
-  },
-  {
-    "key": "alias:blobbuilds",
-    "value": "versions"
-  },
-  {
-    "key": "alias:1104",
-    "value": "versions"
-  },
-  {
-    "key": "tag:viaversion",
-    "value": "🏷️ **Machines turning to heads?**\nThere was an issue with ViaVersion where, with the armor-toggle-fix enabled, machines could lose data when placed. It was resolved in a recent ViaVersion build — update to the latest: https://ci.viaversion.com/job/ViaVersion/lastSuccessfulBuild/"
-  },
-  {
-    "key": "tag:mobstacker",
-    "value": "🏷️ **Having problems with mob drops?**\nMob stackers modify drops, and most don't handle custom drops correctly. If you're not getting items like basic circuit boards, consider changing your mob-stacking plugin.\nWe suggest StackMob, where you can set `use-loot-tables` to `false` so custom drops work. (We're not the developers of any stacker plugin — report bugs to the correct author.)"
   },
   {
     "key": "tag:aternos",
@@ -268,18 +204,6 @@
     "value": "🏷️ **Our README**\nYour question may already be answered here:\n• What is Slimefun?\n• Where can I download it?\n• What Minecraft versions does it support?\n• Difference between development and stable builds?\n• Where do I report bugs?\n• Where do I find translations?\n• How can I contribute?\nRead the README: https://github.com/Slimefun5/Slimefun5"
   },
   {
-    "key": "tag:steveskin",
-    "value": "🏷️ **Seeing player heads as Steve?**\nA Spigot change once broke player heads. This fork includes a fix — make sure you're on the latest build: https://github.com/Slimefun5/Slimefun5/releases"
-  },
-  {
-    "key": "alias:stevehead",
-    "value": "steveskin"
-  },
-  {
-    "key": "tag:windows-file-access",
-    "value": "🏷️ **Windows file-access issue**\nSeen an error like `AccessDeniedException: ... stored-blocks/world/BLOCK.sfb.tmp -> ... BLOCK.sfb`?\nIt's usually one of two things:\n• File lock — another process is accessing the file\n• File permissions — incorrect permissions on the file\nFix: in the folder (e.g. `data-storage/Slimefun/world`), rename `BLOCK.sfb.tmp` to `BLOCK.sfb`, overwriting the existing file. If you still get an error, fix the file permissions first."
-  },
-  {
     "key": "tag:singleplayer",
     "value": "🏷️ **How can I play Slimefun in singleplayer?**\nSlimefun is a plugin, not a mod — a server is required. If you don't have one, you can host a local server on your own computer easily (many tutorials exist online) and still enjoy it solo. A quick step-by-step guide is pinned in <#1520847944553857155>."
   },
@@ -290,22 +214,6 @@
   {
     "key": "tag:future",
     "value": "🏷️ **Future & new Minecraft versions**\nUpstream Slimefun ended development at 1.21.8. This fork continues where it left off: it supports Minecraft **1.8 all the way through 26.x** from a single universal jar — including the versions upstream never reached — and new versions are added as they release.\nDownload: https://github.com/Slimefun5/Slimefun5/releases"
-  },
-  {
-    "key": "alias:26.1",
-    "value": "future"
-  },
-  {
-    "key": "alias:1.21.9",
-    "value": "future"
-  },
-  {
-    "key": "alias:1.21.10",
-    "value": "future"
-  },
-  {
-    "key": "alias:1.21.11",
-    "value": "future"
   },
   {
     "key": "tag:backpack",

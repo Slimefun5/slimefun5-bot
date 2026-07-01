@@ -146,6 +146,18 @@ async function handleImportTags (request, env) {
   }
   if (!Array.isArray(entries)) return json({ error: 'expected_array' }, 400);
 
+  const incoming = new Set(entries.filter((e) => e && typeof e.key === 'string').map((e) => e.key));
+
+  // Replace mode: drop existing tag:/alias: keys not in the new set (warn: keys are left untouched).
+  let deleted = 0;
+  const existing = await env.TAGS.list();
+  for (const { name } of existing.keys) {
+    if ((name.startsWith('tag:') || name.startsWith('alias:')) && !incoming.has(name)) {
+      await env.TAGS.delete(name);
+      deleted++;
+    }
+  }
+
   let written = 0;
   for (const entry of entries) {
     if (!entry || typeof entry.key !== 'string' || typeof entry.value !== 'string') continue;
@@ -153,7 +165,7 @@ async function handleImportTags (request, env) {
     await env.TAGS.put(entry.key, entry.value);
     written++;
   }
-  return json({ ok: true, written });
+  return json({ ok: true, written, deleted });
 }
 
 /** Runs a command relayed from the gateway (a `!`/`?` prefix command). Guarded by RELAY_KEY. */
