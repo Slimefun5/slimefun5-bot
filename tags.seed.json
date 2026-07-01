@@ -21,11 +21,11 @@
   },
   {
     "key": "tag:addons",
-    "value": "🏷️ **Slimefun – Addons**\nSlimefun is great on its own, but addons take it much further. Browse the addon list here: https://github.com/Slimefun5/Slimefun5/wiki\nYou can also install addons right in-game from the Slimefun Guide → Addons.\nSlimefun's API also lets you build your own addon — see the Developer Guide: https://github.com/Slimefun5/Slimefun5/wiki\nPlease don't report or discuss addons in the main support channels — use **#addons**, the addon's own issue tracker, or contact its developer."
+    "value": "🏷️ **Slimefun – Addons**\nSlimefun is great on its own, but addons take it much further. Browse the addon list here: https://github.com/Slimefun5/Slimefun5/wiki\nYou can also install addons right in-game from the Slimefun Guide → Addons.\nSlimefun's API also lets you build your own addon — see the Developer Guide: https://github.com/Slimefun5/Slimefun5/wiki\nPlease don't report or discuss addons in the main support channels — use <#1520847951235121343>, the addon's own issue tracker, or contact its developer."
   },
   {
     "key": "tag:addon-updates",
-    "value": "🏷️ **Addon updates**\nThis fork runs on Minecraft 1.8 through 26.x from one universal jar, and its addons are maintained alongside it. Check **#addon-updates** or the in-game Slimefun Guide → Addons for available updates, or the repositories under https://github.com/Slimefun5 .\nIf an addon isn't updated for your version, reach out to its developer."
+    "value": "🏷️ **Addon updates**\nThis fork runs on Minecraft 1.8 through 26.x from one universal jar, and its addons are maintained alongside it. Check <#1520847937603637339> or the in-game Slimefun Guide → Addons for available updates, or the repositories under https://github.com/Slimefun5 .\nIf an addon isn't updated for your version, reach out to its developer."
   },
   {
     "key": "tag:javadocs",
@@ -109,7 +109,7 @@
   },
   {
     "key": "tag:bot-spam",
-    "value": "🏷️ **Bot commands**\nIf you're not helping others, please keep bot commands to **#bot-spam** to keep the chat clean. Thank you! Multiple violations may result in further action."
+    "value": "🏷️ **Bot commands**\nIf you're not helping others, please keep bot commands to <#1520847973695754430> to keep the chat clean. Thank you! Multiple violations may result in further action."
   },
   {
     "key": "alias:botspam",
@@ -237,11 +237,11 @@
   },
   {
     "key": "tag:bugs",
-    "value": "🏷️ **Found a bug?**\nPlease report it! You can use the in-game bug reporter (Slimefun Guide → Settings → Report a Bug), the `/report` command here on Discord, or open an issue at https://github.com/Slimefun5/Slimefun5/issues\nYou can also discuss it in **#bugs** first. If it's an addon bug, report it on that addon's own issue tracker instead."
+    "value": "🏷️ **Found a bug?**\nPlease report it! You can use the in-game bug reporter (Slimefun Guide → Settings → Report a Bug), the `/report` command here on Discord, or open an issue at https://github.com/Slimefun5/Slimefun5/issues\nYou can also discuss it in <#1520847950501380339> first. If it's an addon bug, report it on that addon's own issue tracker instead."
   },
   {
     "key": "tag:current",
-    "value": "🏷️ **Are my addons up to date?**\nThis fork runs on Minecraft 1.8 through 26.x from one universal jar, and its addons are maintained alongside it. Check **#addon-updates** or the in-game Slimefun Guide → Addons for the latest, or the repositories under https://github.com/Slimefun5 ."
+    "value": "🏷️ **Are my addons up to date?**\nThis fork runs on Minecraft 1.8 through 26.x from one universal jar, and its addons are maintained alongside it. Check <#1520847937603637339> or the in-game Slimefun Guide → Addons for the latest, or the repositories under https://github.com/Slimefun5 ."
   },
   {
     "key": "tag:bedrock",
@@ -281,7 +281,7 @@
   },
   {
     "key": "tag:singleplayer",
-    "value": "🏷️ **How can I play Slimefun in singleplayer?**\nSlimefun is a plugin, not a mod — a server is required. If you don't have one, you can host a local server on your own computer easily (many tutorials exist online) and still enjoy it solo. A quick step-by-step guide is pinned in **#questions**."
+    "value": "🏷️ **How can I play Slimefun in singleplayer?**\nSlimefun is a plugin, not a mod — a server is required. If you don't have one, you can host a local server on your own computer easily (many tutorials exist online) and still enjoy it solo. A quick step-by-step guide is pinned in <#1520847944553857155>."
   },
   {
     "key": "tag:segmenting",

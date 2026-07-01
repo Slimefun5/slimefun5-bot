@@ -10,7 +10,7 @@
 // Secrets/vars: DISCORD_WEBHOOK_URL (#bug-reports), DISCORD_PUBLIC_KEY (app public key),
 //               GATEWAY_URL (the VM's public URL, optional), RELAY_KEY (shared secret, optional).
 
-import { handleInteraction, postReportTo, resolveTag, formatTagList } from './src/commands.js';
+import { handleInteraction, runCommand, postReportTo, resolveTag, formatTagList } from './src/commands.js';
 
 const FORWARD_TIMEOUT_MS = 1800;
 
@@ -29,6 +29,9 @@ export default {
     }
     if (request.method === 'POST' && url.pathname === '/admin/import-tags') {
       return handleImportTags(request, env);
+    }
+    if (request.method === 'POST' && url.pathname === '/command') {
+      return handleCommandRelay(request, env);
     }
     if (request.method === 'POST' && url.pathname === '/report') {
       return handleReport(request, env);
@@ -99,12 +102,17 @@ async function handleInteractions (request, env, ctx) {
 async function respondToCommand (interaction, env) {
   let content = '⚠️ Something went wrong handling that command.';
   try {
-    const response = await handleInteraction(interaction, {
-      env,
-      postReport: (report) => postReportTo(env.DISCORD_WEBHOOK_URL, report),
-      store: makeStore(env)
-    });
-    content = response?.data?.content || content;
+    if (interaction.data?.name === 'helpful') {
+      // Role changes need the gateway (guild access); the Worker can't touch roles itself.
+      content = await toggleHelpfulViaGateway(interaction, env);
+    } else {
+      const response = await handleInteraction(interaction, {
+        env,
+        postReport: (report) => postReportTo(env.DISCORD_WEBHOOK_URL, report),
+        store: makeStore(env)
+      });
+      content = response?.data?.content || content;
+    }
   } catch (e) {
     content = '⚠️ ' + (e?.message || 'error');
   }
@@ -148,6 +156,31 @@ async function handleImportTags (request, env) {
   return json({ ok: true, written });
 }
 
+/** Runs a command relayed from the gateway (a `!`/`?` prefix command). Guarded by RELAY_KEY. */
+async function handleCommandRelay (request, env) {
+  if (!env.RELAY_KEY || request.headers.get('X-Relay-Key') !== env.RELAY_KEY) {
+    return json({ error: 'unauthorized' }, 401);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: 'bad_json' }, 400);
+  }
+  const content = await runCommand({
+    name: body.name,
+    env,
+    subcommand: body.subcommand || null,
+    options: body.options || {},
+    resolvedUsers: body.resolvedUsers || {},
+    author: body.author || 'someone',
+    isStaff: !!body.isStaff,
+    store: makeStore(env),
+    postReport: (report) => postReportTo(env.DISCORD_WEBHOOK_URL, report)
+  });
+  return json({ content });
+}
+
 /** Returns the content of a stored tag by name, for the gateway's `?name` chat lookups. */
 async function handleTagLookup (url, env) {
   const name = (url.searchParams.get('name') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
@@ -165,6 +198,25 @@ function makeStore (env) {
     delete: (key) => env.TAGS.delete(key),
     list: async (prefix) => (await env.TAGS.list({ prefix })).keys.map((k) => k.name)
   };
+}
+
+/** Asks the gateway to toggle the Helpful role for the interaction's user; returns the reply text. */
+async function toggleHelpfulViaGateway (interaction, env) {
+  const unavailable = 'The Helpful role is only available while the bot is fully online. Try again shortly.';
+  if (!env.GATEWAY_URL) return unavailable;
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (env.RELAY_KEY) headers['X-Relay-Key'] = env.RELAY_KEY;
+    const resp = await fetch(env.GATEWAY_URL.replace(/\/$/, '') + '/helpful', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId: interaction.member?.user?.id, guildId: interaction.guild_id })
+    });
+    if (!resp.ok) return unavailable;
+    return (await resp.json()).content || 'Done.';
+  } catch {
+    return unavailable;
+  }
 }
 
 /** Forwards a request to the VM gateway when configured + reachable; returns the Response or null. */

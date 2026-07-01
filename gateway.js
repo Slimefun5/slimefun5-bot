@@ -21,7 +21,10 @@ const PORT = process.env.PORT || 8080;
 const SLIMEFUN = /[Ss]lime(?:F|( [Ff]))un/;
 const INVITE = /discord(?:app\.com\/invite|\.gg)\/([A-Za-z0-9]+)/i;
 const OUR_INVITE = 'cbbyzbewdr';
-const TAG = /^\?([a-z0-9_-]{1,32})$/i;
+// A `!` or `?` prefixed command/tag, e.g. "?rp" or "!warn add @user spam".
+const PREFIX = /^[!?]([a-z0-9_-]+)(?:\s+([\s\S]+))?$/;
+// Commands relayed to the Worker (which owns KV + the report webhook). helpful/help are handled here.
+const RELAY_COMMANDS = new Set(['ping', 'version', 'wiki', 'addon', 'report', 'tag', 'warn']);
 
 const SCAM_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
 const INVITE_TIMEOUT_MS = 60 * 60 * 1000;
@@ -54,6 +57,104 @@ loadScamDomains();
 async function timeoutMember (member, ms, reason) {
   if (!member) return;
   try { await member.timeout(ms, reason); } catch { /* missing perms or higher role */ }
+}
+
+/** Toggles the "Helpful" role (matched by name) on a member. */
+async function toggleHelpful (member) {
+  if (!member) return "I couldn't find your server membership.";
+  const role = member.guild.roles.cache.find((r) => r.name.toLowerCase() === 'helpful');
+  if (!role) return 'There is no "Helpful" role on this server.';
+  try {
+    if (member.roles.cache.has(role.id)) {
+      await member.roles.remove(role);
+      return 'Removed the **Helpful** role — thanks for all your help! 👋';
+    }
+    await member.roles.add(role);
+    return 'You now have the **Helpful** role — thanks for helping out! 🙌';
+  } catch {
+    return "I couldn't change your roles — I may be missing Manage Roles, or my role is below the Helpful role.";
+  }
+}
+
+function parseUserId (token) {
+  const match = (token || '').match(/\d{15,}/);
+  return match ? match[0] : '';
+}
+
+/** Parses a prefix command's argument string into the {subcommand, options} the shared command expects. */
+function parsePrefixArgs (name, rest) {
+  const tokens = rest ? rest.split(/\s+/) : [];
+  if (name === 'wiki') return { options: { term: rest } };
+  if (name === 'addon') return { options: { name: rest } };
+  if (name === 'report') {
+    const [title, description, plugin] = rest.split('|').map((s) => s.trim());
+    return { options: { title: title || rest, description: description || '', plugin: plugin || '' } };
+  }
+  if (name === 'tag') {
+    const sub = (tokens[0] || 'list').toLowerCase();
+    if (sub === 'list') return { subcommand: 'list', options: {} };
+    if (sub === 'create') return { subcommand: 'create', options: { name: tokens[1] || '', content: tokens.slice(2).join(' ') } };
+    if (sub === 'alias') return { subcommand: 'alias', options: { name: tokens[1] || '', target: tokens[2] || '' } };
+    if (sub === 'get' || sub === 'delete') return { subcommand: sub, options: { name: tokens[1] || '' } };
+    return { subcommand: 'get', options: { name: tokens[0] || '' } };
+  }
+  if (name === 'warn') {
+    const sub = (tokens[0] || 'list').toLowerCase();
+    if (sub === 'add') return { subcommand: 'add', options: { user: parseUserId(tokens[1]), reason: tokens.slice(2).join(' ') } };
+    if (sub === 'list' || sub === 'clear') return { subcommand: sub, options: { user: parseUserId(tokens[1]) } };
+    return { subcommand: 'list', options: { user: parseUserId(tokens[0]) } };
+  }
+  return { options: {} };
+}
+
+/** POSTs JSON to the Worker (with the relay key) and returns its `content` field, or null. */
+async function callWorker (path, payload) {
+  if (!workerUrl) return null;
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (relayKey) headers['X-Relay-Key'] = relayKey;
+    const res = await fetch(workerUrl.replace(/\/$/, '') + path, { method: 'POST', headers, body: JSON.stringify(payload) });
+    if (!res.ok) return null;
+    return (await res.json()).content || null;
+  } catch { return null; }
+}
+
+/** Runs a prefix command by relaying it to the Worker's /command endpoint, then replies with the result. */
+async function runPrefixCommand (message, name, rest) {
+  const parsed = parsePrefixArgs(name, rest);
+  const perms = message.member?.permissions;
+  const isStaff = !!perms && (
+    perms.has(PermissionsBitField.Flags.Administrator) ||
+    perms.has(PermissionsBitField.Flags.ManageMessages) ||
+    perms.has(PermissionsBitField.Flags.ModerateMembers)
+  );
+  const resolvedUsers = {};
+  if (parsed.options?.user) {
+    const mentioned = message.mentions?.users?.get(parsed.options.user);
+    resolvedUsers[parsed.options.user] = { username: mentioned ? mentioned.username : parsed.options.user };
+  }
+  const content = await callWorker('/command', {
+    name,
+    subcommand: parsed.subcommand || null,
+    options: parsed.options || {},
+    resolvedUsers,
+    author: message.author.username,
+    isStaff
+  });
+  if (content) await message.reply(String(content).slice(0, 2000)).catch(() => {});
+}
+
+/** Replies with a tag's content (or the full list for help/tags), fetched from the Worker's KV. */
+async function replyTag (message, name) {
+  if (!workerUrl) return;
+  const endpoint = (name === 'help' || name === 'tags') ? '/tags' : `/tag?name=${encodeURIComponent(name)}`;
+  try {
+    const res = await fetch(`${workerUrl.replace(/\/$/, '')}${endpoint}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.content) await message.reply(data.content).catch(() => {});
+    }
+  } catch { /* worker unreachable — ignore */ }
 }
 
 // 1) Gateway client — message filters / auto-replies (need a persistent connection).
@@ -125,19 +226,18 @@ client.on(Events.MessageCreate, async (message) => {
     return;
   }
 
-  // Tag lookup: `?name` replies with the stored tag content (fetched from the Worker's KV store).
-  // `?help` / `?tags` list every available tag.
-  const tag = content.trim().match(TAG);
-  if (tag && workerUrl) {
-    const name = tag[1].toLowerCase();
-    const endpoint = (name === 'help' || name === 'tags') ? '/tags' : `/tag?name=${encodeURIComponent(name)}`;
-    try {
-      const res = await fetch(`${workerUrl.replace(/\/$/, '')}${endpoint}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.content) await message.reply(data.content).catch(() => {});
-      }
-    } catch { /* worker unreachable — ignore */ }
+  // `!`/`?` prefixed messages → a command (relayed to the Worker), the Helpful-role toggle, or a tag.
+  const prefixed = content.trim().match(PREFIX);
+  if (!prefixed) return;
+  const name = prefixed[1].toLowerCase();
+  const rest = (prefixed[2] || '').trim();
+
+  if (name === 'helpful') {
+    await message.reply(await toggleHelpful(message.member)).catch(() => {});
+  } else if (RELAY_COMMANDS.has(name)) {
+    await runPrefixCommand(message, name, rest);
+  } else {
+    await replyTag(message, name); // tags, plus help/tags list
   }
 });
 
@@ -186,6 +286,10 @@ http.createServer((req, res) => {
       } else if (req.url === '/interactions') {
         const response = await handleInteraction(body, { env, postReport });
         send(res, 200, response);
+      } else if (req.url === '/helpful') {
+        const guild = (body.guildId && client.guilds.cache.get(body.guildId)) || client.guilds.cache.first();
+        const member = guild ? await guild.members.fetch(body.userId).catch(() => null) : null;
+        send(res, 200, { content: await toggleHelpful(member) });
       } else {
         res.writeHead(404);
         res.end();

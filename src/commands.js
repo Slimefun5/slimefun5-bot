@@ -183,6 +183,15 @@ export const commands = {
       }
       return 'Unknown subcommand.';
     }
+  },
+
+  helpful: {
+    definition: { name: 'helpful', description: 'Toggle the Helpful role on yourself' },
+    // Role changes need guild access, so each runtime intercepts "helpful" before this runs;
+    // this body is only a fallback if that ever doesn't happen.
+    async run() {
+      return 'The Helpful role can only be toggled from within the server.';
+    }
   }
 };
 
@@ -241,14 +250,44 @@ export async function postReportTo (webhookUrl, fields) {
   return resp.ok;
 }
 
-/** Runs a Discord interaction against the shared commands; returns the Discord response object. */
+/**
+ * Runs a command by name and returns its reply text. Shared by every entry point (slash interactions
+ * on the Worker, and `!`/`?` prefix commands relayed from the gateway) so behaviour is identical.
+ */
+export async function runCommand ({ name, env = {}, subcommand = null, options = {}, resolvedUsers = {}, author = 'someone', isStaff = false, store = null, postReport = async () => false }) {
+  const command = commands[name];
+  if (!command) return 'Unknown command.';
+
+  const ctx = {
+    env,
+    subcommand,
+    author,
+    isStaff,
+    store,
+    now: new Date().toISOString(),
+    getString: (key) => (options[key] != null ? String(options[key]) : ''),
+    getUser: (key) => {
+      const id = options[key];
+      if (!id) return null;
+      const resolved = resolvedUsers[id];
+      return { id, username: resolved ? resolved.username : String(id) };
+    },
+    postReport: (report) => postReport({ ...report, meta: `**By:** ${author} (Discord)` })
+  };
+  return await command.run(ctx);
+}
+
+/** True if a member's Discord permission bitfield grants any moderator-level permission. */
+export function isStaffPermissions (permissionBits) {
+  const perms = BigInt(permissionBits || '0');
+  return (perms & ADMINISTRATOR) !== 0n || (perms & MANAGE_MESSAGES) !== 0n || (perms & MODERATE_MEMBERS) !== 0n;
+}
+
+/** Runs a Discord slash interaction against the shared commands; returns the Discord response object. */
 export async function handleInteraction (interaction, { env, postReport, store = null }) {
   if (interaction.type === 1) return { type: 1 };
 
   if (interaction.type === 2) {
-    const command = commands[interaction.data.name];
-    if (!command) return reply('Unknown command.');
-
     // A subcommand nests its own options one level down; flatten them and record its name.
     let rawOptions = interaction.data.options || [];
     let subcommand = null;
@@ -259,27 +298,18 @@ export async function handleInteraction (interaction, { env, postReport, store =
     const options = {};
     for (const option of rawOptions) options[option.name] = option.value;
 
-    const resolvedUsers = interaction.data.resolved?.users || {};
-    const author = interaction.member?.user?.username || interaction.user?.username || 'someone';
-    const perms = BigInt(interaction.member?.permissions || '0');
-
-    const ctx = {
+    const content = await runCommand({
+      name: interaction.data.name,
       env,
       subcommand,
-      author,
-      now: new Date().toISOString(),
-      isStaff: (perms & ADMINISTRATOR) !== 0n || (perms & MANAGE_MESSAGES) !== 0n || (perms & MODERATE_MEMBERS) !== 0n,
-      getString: (name) => (options[name] != null ? String(options[name]) : ''),
-      getUser: (name) => {
-        const id = options[name];
-        if (!id) return null;
-        const resolved = resolvedUsers[id];
-        return { id, username: resolved ? resolved.username : String(id) };
-      },
+      options,
+      resolvedUsers: interaction.data.resolved?.users || {},
+      author: interaction.member?.user?.username || interaction.user?.username || 'someone',
+      isStaff: isStaffPermissions(interaction.member?.permissions),
       store,
-      postReport: (report) => postReport({ ...report, meta: `**By:** ${author} (Discord)` })
-    };
-    return reply(await command.run(ctx));
+      postReport
+    });
+    return reply(content);
   }
 
   return reply('Unsupported interaction.');
