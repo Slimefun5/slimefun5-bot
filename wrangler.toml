@@ -9,9 +9,9 @@ compatibility_date = "2024-11-01"
 # Persistent store for /tag and /warn (Cloudflare KV). Create it once, then uncomment the block
 # below with the printed id (it is NOT secret) so /tag, /warn, and ?name chat lookups work:
 #   npx wrangler kv namespace create TAGS
-# [[kv_namespaces]]
-# binding = "TAGS"
-# id = "PASTE_THE_PRINTED_NAMESPACE_ID"
+[[kv_namespaces]]
+binding = "TAGS"
+id = "12c0ad9dd7b94ae48c210aa80a8168fa"
 
 # Per-IP rate limit (anti-flood). namespace_id is just an identifier; period must be 10 or 60.
 # 10 reports/min per IP — generous for a real server (the plugin already caps each player), tight
