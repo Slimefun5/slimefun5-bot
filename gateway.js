@@ -24,7 +24,7 @@ const OUR_INVITE = 'cbbyzbewdr';
 // A `!` or `?` prefixed command/tag, e.g. "?rp" or "!warn add @user spam".
 const PREFIX = /^[!?]([a-z0-9_-]+)(?:\s+([\s\S]+))?$/;
 // Commands relayed to the Worker (which owns KV + the report webhook). helpful/help are handled here.
-const RELAY_COMMANDS = new Set(['ping', 'version', 'wiki', 'addon', 'report', 'tag', 'warn']);
+const RELAY_COMMANDS = new Set(['ping', 'version', 'wiki', 'addon', 'report', 'tag', 'warn', 'commands']);
 
 const SCAM_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000;
 const INVITE_TIMEOUT_MS = 60 * 60 * 1000;

@@ -192,6 +192,15 @@ export const commands = {
     async run() {
       return 'The Helpful role can only be toggled from within the server.';
     }
+  },
+
+  commands: {
+    definition: { name: 'commands', description: 'List the bot\'s commands' },
+    async run() {
+      const lines = Object.values(commands).map((c) => `\`/${c.definition.name}\` — ${c.definition.description}`);
+      return '**Commands** (each also works with `!` or `?`):\n' + lines.join('\n')
+        + '\nFor the FAQ tags, use `?help`.';
+    }
   }
 };
 
