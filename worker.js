@@ -27,6 +27,9 @@ export default {
     if (request.method === 'GET' && url.pathname === '/tags') {
       return json({ content: await formatTagList(makeStore(env)) });
     }
+    if (request.method === 'POST' && url.pathname === '/admin/import-tags') {
+      return handleImportTags(request, env);
+    }
     if (request.method === 'POST' && url.pathname === '/report') {
       return handleReport(request, env);
     }
@@ -118,6 +121,31 @@ async function respondToCommand (interaction, env) {
   } catch (e) {
     console.log('followup threw: ' + (e && e.message ? e.message : e));
   }
+}
+
+/** Bulk-loads tag/alias entries into KV. Guarded by RELAY_KEY; only tag:/alias: keys are accepted. */
+async function handleImportTags (request, env) {
+  if (!env.RELAY_KEY || request.headers.get('X-Relay-Key') !== env.RELAY_KEY) {
+    return json({ error: 'unauthorized' }, 401);
+  }
+  if (!env.TAGS) return json({ error: 'no_kv' }, 503);
+
+  let entries;
+  try {
+    entries = await request.json();
+  } catch {
+    return json({ error: 'bad_json' }, 400);
+  }
+  if (!Array.isArray(entries)) return json({ error: 'expected_array' }, 400);
+
+  let written = 0;
+  for (const entry of entries) {
+    if (!entry || typeof entry.key !== 'string' || typeof entry.value !== 'string') continue;
+    if (!entry.key.startsWith('tag:') && !entry.key.startsWith('alias:')) continue;
+    await env.TAGS.put(entry.key, entry.value);
+    written++;
+  }
+  return json({ ok: true, written });
 }
 
 /** Returns the content of a stored tag by name, for the gateway's `?name` chat lookups. */
