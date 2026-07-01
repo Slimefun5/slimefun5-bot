@@ -204,9 +204,9 @@ export const commands = {
   }
 };
 
-/** Normalizes a tag name to a safe, lowercase key fragment. */
+/** Normalizes a tag name to a safe, lowercase key fragment (dots allowed for version tags like 1.21). */
 function tagName (raw) {
-  return (raw || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  return (raw || '').trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
 }
 
 /** Formats the full tag list (with aliases grouped under each tag) for `/tag list` and `?help`. */

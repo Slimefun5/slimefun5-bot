@@ -183,7 +183,7 @@ async function handleCommandRelay (request, env) {
 
 /** Returns the content of a stored tag by name, for the gateway's `?name` chat lookups. */
 async function handleTagLookup (url, env) {
-  const name = (url.searchParams.get('name') || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  const name = (url.searchParams.get('name') || '').toLowerCase().replace(/[^a-z0-9_.-]/g, '');
   if (!env.TAGS || !name) return json({ error: 'not_found' }, 404);
   const content = await resolveTag(makeStore(env), name);
   return content ? json({ name, content }) : json({ error: 'not_found' }, 404);

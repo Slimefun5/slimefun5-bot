@@ -16,13 +16,14 @@ const env = { GITHUB_OWNER: process.env.GITHUB_OWNER || 'Slimefun5' };
 const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 const relayKey = process.env.RELAY_KEY;
 const workerUrl = process.env.WORKER_URL;
+const helpfulRoleId = process.env.HELPFUL_ROLE_ID;
 const PORT = process.env.PORT || 8080;
 
 const SLIMEFUN = /[Ss]lime(?:F|( [Ff]))un/;
 const INVITE = /discord(?:app\.com\/invite|\.gg)\/([A-Za-z0-9]+)/i;
 const OUR_INVITE = 'cbbyzbewdr';
-// A `!` or `?` prefixed command/tag, e.g. "?rp" or "!warn add @user spam".
-const PREFIX = /^[!?]([a-z0-9_-]+)(?:\s+([\s\S]+))?$/;
+// A `!` or `?` prefixed command/tag, e.g. "?rp", "?1.21" or "!warn add @user spam".
+const PREFIX = /^[!?]([a-z0-9_.-]+)(?:\s+([\s\S]+))?$/;
 // Commands relayed to the Worker (which owns KV + the report webhook). helpful/help are handled here.
 const RELAY_COMMANDS = new Set(['ping', 'version', 'wiki', 'addon', 'report', 'tag', 'warn', 'commands']);
 
@@ -59,11 +60,17 @@ async function timeoutMember (member, ms, reason) {
   try { await member.timeout(ms, reason); } catch { /* missing perms or higher role */ }
 }
 
-/** Toggles the "Helpful" role (matched by name) on a member. */
+/** Toggles the Helpful role on a member. Resolved by HELPFUL_ROLE_ID, else by name (exact, then contains). */
 async function toggleHelpful (member) {
   if (!member) return "I couldn't find your server membership.";
-  const role = member.guild.roles.cache.find((r) => r.name.toLowerCase() === 'helpful');
-  if (!role) return 'There is no "Helpful" role on this server.';
+  const roles = member.guild.roles.cache;
+  const wanted = (process.env.HELPFUL_ROLE_NAME || 'helpful').toLowerCase();
+  const role = (helpfulRoleId && roles.get(helpfulRoleId))
+    || roles.find((r) => r.name.toLowerCase() === wanted)
+    || roles.find((r) => r.name.toLowerCase().includes('helpful'));
+  if (!role) {
+    return 'I couldn\'t find the Helpful role. Set HELPFUL_ROLE_ID (or HELPFUL_ROLE_NAME) so I can find it.';
+  }
   try {
     if (member.roles.cache.has(role.id)) {
       await member.roles.remove(role);
@@ -162,11 +169,15 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
 });
 
-client.once(Events.ClientReady, (c) => console.log(`Gateway connected as ${c.user.tag} — message filters active`));
+client.once(Events.ClientReady, async (c) => {
+  console.log(`Gateway connected as ${c.user.tag} — message filters active`);
+  // Register to the connected guild(s) — instant, unlike global commands which take up to ~1h.
+  await registerCommands([...c.guilds.cache.keys()]);
+});
 
-// Register slash commands over REST, independent of the gateway, so commands work (via the Worker's
-// HTTP interactions) even if the gateway can't connect (e.g. Message Content Intent not yet enabled).
-async function registerCommands () {
+// Registers slash commands. With guild IDs: instant per-guild (and clears the global set to avoid
+// duplicates). With none (gateway couldn't connect): falls back to a global registration.
+async function registerCommands (guildIds) {
   const token = process.env.DISCORD_BOT_TOKEN;
   if (!token) return;
 
@@ -174,26 +185,25 @@ async function registerCommands () {
     const me = await fetch('https://discord.com/api/v10/applications/@me', { headers: { Authorization: `Bot ${token}` } });
     if (!me.ok) { console.error('App lookup failed:', me.status, await me.text()); return; }
     const appId = (await me.json()).id;
+    const headers = { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' };
+    const body = JSON.stringify(commandDefinitions());
+    const api = 'https://discord.com/api/v10/applications/' + appId;
 
-    const guildId = process.env.DISCORD_GUILD_ID;
-    const url = guildId
-      ? `https://discord.com/api/v10/applications/${appId}/guilds/${guildId}/commands`
-      : `https://discord.com/api/v10/applications/${appId}/commands`;
-
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(commandDefinitions())
-    });
-    console.log(res.ok
-      ? `Registered ${guildId ? 'guild (instant)' : 'global (up to 1h to appear)'} slash commands`
-      : `Command registration failed: ${res.status} ${await res.text()}`);
+    if (guildIds && guildIds.length) {
+      await fetch(`${api}/commands`, { method: 'PUT', headers, body: '[]' }); // clear global (dedupe)
+      for (const guildId of guildIds) {
+        const res = await fetch(`${api}/guilds/${guildId}/commands`, { method: 'PUT', headers, body });
+        if (!res.ok) console.error(`Guild ${guildId} registration failed: ${res.status} ${await res.text()}`);
+      }
+      console.log(`Registered ${commandDefinitions().length} commands to ${guildIds.length} guild(s) (instant)`);
+    } else {
+      const res = await fetch(`${api}/commands`, { method: 'PUT', headers, body });
+      console.log(res.ok ? 'Registered global commands (up to ~1h to appear)' : `Global registration failed: ${res.status} ${await res.text()}`);
+    }
   } catch (e) {
     console.error('Command registration error:', e?.message || e);
   }
 }
-
-registerCommands();
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
@@ -249,9 +259,10 @@ client.on(Events.Error, (e) => console.error('Discord client error:', e?.message
 process.on('uncaughtException', (e) => console.error('uncaughtException (continuing):', e?.message || e));
 process.on('unhandledRejection', (e) => console.error('unhandledRejection (continuing):', e?.message || e));
 
-client.login(process.env.DISCORD_BOT_TOKEN).catch((e) =>
-  console.error('Gateway login failed — message filters are off until the Message Content Intent is enabled.', e?.message || e)
-);
+client.login(process.env.DISCORD_BOT_TOKEN).catch((e) => {
+  console.error('Gateway login failed — message filters are off until the Message Content Intent is enabled.', e?.message || e);
+  registerCommands(); // no guild context → global registration so slash commands still work
+});
 
 // 2) HTTP server — what the Worker forwards to (and the host's health check).
 const postReport = (report) => postReportTo(webhookUrl, report);
