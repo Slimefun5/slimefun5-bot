@@ -16,7 +16,7 @@ const env = { GITHUB_OWNER: process.env.GITHUB_OWNER || 'Slimefun5' };
 const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 const relayKey = process.env.RELAY_KEY;
 const workerUrl = process.env.WORKER_URL;
-const helpfulRoleId = process.env.HELPFUL_ROLE_ID;
+const helpfulRoleId = process.env.HELPFUL_ROLE_ID || '1520847896637997148';
 const PORT = process.env.PORT || 8080;
 
 const SLIMEFUN = /[Ss]lime(?:F|( [Ff]))un/;
