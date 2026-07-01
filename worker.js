@@ -44,7 +44,9 @@ export default {
 };
 
 async function handleReport (request, env) {
-  if (!env.GATEWAY_URL && !env.DISCORD_WEBHOOK_URL) return json({ error: 'unconfigured' }, 503);
+  // Reports post straight to the webhook - never forwarded to the gateway. Forwarding caused duplicates:
+  // a sleeping Render gateway made the Worker time out and post once, then woke and posted again.
+  if (!env.DISCORD_WEBHOOK_URL) return json({ error: 'unconfigured' }, 503);
 
   if (env.REPORT_LIMITER) {
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -52,14 +54,9 @@ async function handleReport (request, env) {
     if (!success) return json({ error: 'rate_limited' }, 429);
   }
 
-  const raw = await request.text();
-
-  const forwarded = await forwardToGateway(env, '/report', raw);
-  if (forwarded) return json({ ok: true, via: 'gateway' }, 200);
-
   let body;
   try {
-    body = JSON.parse(raw);
+    body = JSON.parse(await request.text());
   } catch {
     return json({ error: 'bad_json' }, 400);
   }
