@@ -96,6 +96,10 @@ async function handleInteractions (request, env, ctx) {
     return json({ type: 5 });
   }
 
+  if (interaction.type === 4) {
+    return json(await buildAutocomplete(interaction, env)); // slash-command option autocomplete (e.g. /faq)
+  }
+
   return json({ type: 4, data: { content: 'Unsupported interaction.' } });
 }
 
@@ -166,6 +170,18 @@ async function handleImportTags (request, env) {
     written++;
   }
   return json({ ok: true, written, deleted });
+}
+
+/** Builds autocomplete choices (max 25) of tag names matching the focused option's typed text. */
+async function buildAutocomplete (interaction, env) {
+  const focused = (interaction.data?.options || []).find((o) => o.focused);
+  const typed = String(focused?.value || '').toLowerCase();
+  const store = makeStore(env);
+  if (!store) return { type: 8, data: { choices: [] } };
+
+  const names = (await store.list('tag:')).map((k) => k.slice(4)).sort();
+  const matches = names.filter((n) => n.includes(typed)).slice(0, 25);
+  return { type: 8, data: { choices: matches.map((n) => ({ name: n, value: n })) } };
 }
 
 /** Runs a command relayed from the gateway (a `!`/`?` prefix command). Guarded by RELAY_KEY. */

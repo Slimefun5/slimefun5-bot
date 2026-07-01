@@ -199,7 +199,20 @@ export const commands = {
     async run() {
       const lines = Object.values(commands).map((c) => `\`/${c.definition.name}\` — ${c.definition.description}`);
       return '**Commands** (each also works with `!` or `?`):\n' + lines.join('\n')
-        + '\nFor the FAQ tags, use `?help`.';
+        + '\nFor the FAQ tags, use `?help` or `/faq`.';
+    }
+  },
+
+  faq: {
+    definition: {
+      name: 'faq',
+      description: 'Show a FAQ answer (the same entries as the ?topic tags)',
+      options: [{ name: 'topic', description: 'FAQ topic', type: STRING_OPTION, required: true, autocomplete: true }]
+    },
+    async run(ctx) {
+      if (!ctx.store) return '⚠️ Tag storage is not configured yet (no KV namespace bound).';
+      const topic = ctx.getString('topic');
+      return (await resolveTag(ctx.store, topic)) || `No FAQ entry for \`${topic}\`. Type \`/faq\` and pick from the list, or use \`?help\`.`;
     }
   }
 };
