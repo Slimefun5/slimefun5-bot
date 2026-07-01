@@ -126,10 +126,13 @@ client.on(Events.MessageCreate, async (message) => {
   }
 
   // Tag lookup: `?name` replies with the stored tag content (fetched from the Worker's KV store).
+  // `?help` / `?tags` list every available tag.
   const tag = content.trim().match(TAG);
   if (tag && workerUrl) {
+    const name = tag[1].toLowerCase();
+    const endpoint = (name === 'help' || name === 'tags') ? '/tags' : `/tag?name=${encodeURIComponent(name)}`;
     try {
-      const res = await fetch(`${workerUrl.replace(/\/$/, '')}/tag?name=${encodeURIComponent(tag[1].toLowerCase())}`);
+      const res = await fetch(`${workerUrl.replace(/\/$/, '')}${endpoint}`);
       if (res.ok) {
         const data = await res.json();
         if (data.content) await message.reply(data.content).catch(() => {});

@@ -10,7 +10,7 @@
 // Secrets/vars: DISCORD_WEBHOOK_URL (#bug-reports), DISCORD_PUBLIC_KEY (app public key),
 //               GATEWAY_URL (the VM's public URL, optional), RELAY_KEY (shared secret, optional).
 
-import { handleInteraction, postReportTo, resolveTag } from './src/commands.js';
+import { handleInteraction, postReportTo, resolveTag, formatTagList } from './src/commands.js';
 
 const FORWARD_TIMEOUT_MS = 1800;
 
@@ -23,6 +23,9 @@ export default {
     }
     if (request.method === 'GET' && url.pathname === '/tag') {
       return handleTagLookup(url, env);
+    }
+    if (request.method === 'GET' && url.pathname === '/tags') {
+      return json({ content: await formatTagList(makeStore(env)) });
     }
     if (request.method === 'POST' && url.pathname === '/report') {
       return handleReport(request, env);

@@ -1,0 +1,322 @@
+[
+  {
+    "key": "tag:resourcepack",
+    "value": "🏷️ **No official resource pack for Slimefun**\nThere is no official resource pack for Slimefun. Anything you find online is not made by us and we don't support it. Slimefun does not officially support resource packs as of now."
+  },
+  {
+    "key": "alias:texturepack",
+    "value": "resourcepack"
+  },
+  {
+    "key": "alias:rp",
+    "value": "resourcepack"
+  },
+  {
+    "key": "tag:fork",
+    "value": "🏷️ **About this fork**\nThis is a community fork of Slimefun (Slimefun5). It runs on Minecraft **1.8 through 26.x from a single universal jar** (Java 8+), continuing development after upstream ended at 1.21.8. It adds item translations, an in-game addon installer and an in-game bug reporter, among other things.\nhttps://github.com/Slimefun5/Slimefun5"
+  },
+  {
+    "key": "alias:unofficial",
+    "value": "fork"
+  },
+  {
+    "key": "tag:addons",
+    "value": "🏷️ **Slimefun – Addons**\nSlimefun is great on its own, but addons take it much further. Browse the addon list here: https://github.com/Slimefun5/Slimefun5/wiki\nYou can also install addons right in-game from the Slimefun Guide → Addons.\nSlimefun's API also lets you build your own addon — see the Developer Guide: https://github.com/Slimefun5/Slimefun5/wiki\nPlease don't report or discuss addons in the main support channels — use the addon's own issue tracker or contact its developer."
+  },
+  {
+    "key": "tag:addon-updates",
+    "value": "🏷️ **Addon updates**\nThis fork runs on Minecraft 1.8 through 26.x from one universal jar, and its addons are maintained alongside it. Check the in-game Slimefun Guide → Addons for available updates, or the repositories under https://github.com/Slimefun5 .\nIf an addon isn't updated for your version, reach out to its developer."
+  },
+  {
+    "key": "tag:javadocs",
+    "value": "🏷️ **Javadocs**\nYou can browse our API and — more importantly — read the Developer Guide, which walks you through creating a Slimefun addon from scratch: https://github.com/Slimefun5/Slimefun5/wiki"
+  },
+  {
+    "key": "tag:devguide",
+    "value": "🏷️ **Developer Guide**\nWant to create an addon for Slimefun? Great! Check out the developer guide: https://github.com/Slimefun5/Slimefun5/wiki\nNote: we expect at least a basic understanding of Java and your build tool (Maven/Gradle)."
+  },
+  {
+    "key": "tag:incomplete",
+    "value": "🏷️ **Please complete ALL of the following steps (all of them — not just the first!)**\n1. Run `/sf versions` and send a screenshot. We need the exact versions you're using — \"latest\" doesn't help us.\n2. Check your console for errors. If there are any, post them via https://pastebin.com/ .\n3. Run `/pl` and send a screenshot of the output.\nFollow these thoroughly, otherwise we can't help you."
+  },
+  {
+    "key": "alias:more-info",
+    "value": "incomplete"
+  },
+  {
+    "key": "alias:missing",
+    "value": "incomplete"
+  },
+  {
+    "key": "alias:infopls",
+    "value": "incomplete"
+  },
+  {
+    "key": "tag:java",
+    "value": "🏷️ **Java version**\nUnlike upstream Slimefun, this fork is built to run on **Java 8 and above** — the universal jar works from Java 8 up to the latest release, so you don't need to upgrade Java just for Slimefun.\nThat said, newer Minecraft versions themselves may require a newer Java (e.g. MC 1.20.5+ needs Java 21). Match your Java to your Minecraft version.\nDownload Java (Adoptium Temurin): https://adoptium.net/"
+  },
+  {
+    "key": "alias:java17",
+    "value": "java"
+  },
+  {
+    "key": "alias:java16",
+    "value": "java"
+  },
+  {
+    "key": "alias:java11",
+    "value": "java"
+  },
+  {
+    "key": "alias:java8",
+    "value": "java"
+  },
+  {
+    "key": "tag:lag",
+    "value": "🏷️ **Experiencing lag?**\nFirst, identify the source.\n1. Use Spark: run `/spark sampler --thread * --timeout 300`, wait 5 minutes, and send the resulting URL.\n2. Profile Slimefun: run `/sf timings` and `/sf versions` and send screenshots of both.\n3. See our Server Optimization guide on the wiki: https://github.com/Slimefun5/Slimefun5/wiki"
+  },
+  {
+    "key": "tag:karen",
+    "value": "🏷️ **Please be kind, okay?**\nKeep in mind we are all volunteers here. We aren't paid and do this in our free time because we want to. Please treat us with respect, show patience, and remember that \"please\" and \"thanks\" go a long way.\nIn other words: we don't owe you anything, so please don't expect us to treat you as kings and queens."
+  },
+  {
+    "key": "alias:entitled",
+    "value": "karen"
+  },
+  {
+    "key": "tag:translations",
+    "value": "🏷️ **Translating Slimefun**\nThis fork ships with full translations — and yes, item names are translatable here too! You can help improve them. Translations live in the plugin's `languages/` folder and in the repository: https://github.com/Slimefun5/Slimefun5\nIf your language is missing or incomplete, open an issue or PR, or ask here and we'll help you start."
+  },
+  {
+    "key": "alias:translating",
+    "value": "translations"
+  },
+  {
+    "key": "alias:translate",
+    "value": "translations"
+  },
+  {
+    "key": "tag:faq",
+    "value": "🏷️ **Frequently Asked Questions (FAQ)**\nCheck the FAQ on our wiki: https://github.com/Slimefun5/Slimefun5/wiki"
+  },
+  {
+    "key": "tag:english",
+    "value": "🏷️ **Please speak English!**\nPor favor, hable Inglés / Solo inglese, per favore / Solo inglés, gracias / пожалуйста, пишите по-английски / 请使用英语沟通 / 영어 써주세요 / チャットは英語のみ / Bitte sprechen Sie Englisch / Anglais seulement s'il vous plaît / Please speak English. Thank you. https://translate.google.com/"
+  },
+  {
+    "key": "tag:naming-conventions",
+    "value": "🏷️ **Java Naming Conventions**\nPackage: all lower case, no keywords, format `tld.domain.project` (or `io.github.yourname` if you don't own a domain). Example: `io.github.yourname.project`\nClass names: PascalCase. Example: `SomeExampleClass`\nVariables: camelCase. Example: `myBoolean`\nConstants: `public static final`, SCREAMING_SNAKE_CASE. Example: `EXAMPLE_CRAFTING_TABLE`"
+  },
+  {
+    "key": "tag:bot-spam",
+    "value": "🏷️ **Bot commands**\nIf you're not helping others, please keep bot commands to the appropriate channel to keep the chat clean. Thank you!"
+  },
+  {
+    "key": "alias:botspam",
+    "value": "bot-spam"
+  },
+  {
+    "key": "tag:hosts",
+    "value": "🏷️ **Looking for a server host?**\nNote: we don't own or endorse any host listed here — do your own research. These are based on personal experience.\nShared hosting: https://shockbyte.com/ · https://nodecraft.com/ · https://mcprohosting.com/\nVPS (more control — secure it yourself): https://vultr.com/ · https://digitalocean.com/ · https://scaleway.com/\nDedicated: https://online.net/ · https://ovh.com/ · https://rackspace.com/"
+  },
+  {
+    "key": "tag:zip-file-closed",
+    "value": "🏷️ **\"zip file closed\" issue**\nThis is usually caused by a plugin failing to load while the server still tries to access its resources. Check your startup logs to find what failed to load, and send all related startup logs via https://pastebin.com/ so we can investigate."
+  },
+  {
+    "key": "tag:changelog",
+    "value": "🏷️ **Changelog**\nSee the release changelog here: https://github.com/Slimefun5/Slimefun5/releases"
+  },
+  {
+    "key": "tag:mob-spawning",
+    "value": "🏷️ **Mobs not spawning?**\nYou likely have a protection plugin preventing spawning.\nTowny: single plot → `/plot toggle mobs`; whole town → `/t toggle mobs`\nGriefPrevention: `/claimflag entity-spawn any true`"
+  },
+  {
+    "key": "tag:discord",
+    "value": "🏷️ **Wrong server?**\nThis is the Slimefun community Discord — not your Minecraft server's own Discord. If you're looking for server-specific info we can't help; ask via your server's in-game chat for the correct link."
+  },
+  {
+    "key": "alias:server",
+    "value": "discord"
+  },
+  {
+    "key": "tag:hybrid",
+    "value": "🏷️ **Hybrid servers**\nSlimefun does not support hybrid servers (mods + plugins). Mixing mods or data-packs with plugins can cause unexpected results or crashes. For stability we recommend Paper: https://papermc.io/downloads"
+  },
+  {
+    "key": "tag:versions",
+    "value": "🏷️ **Slimefun – versions & download**\nThis fork runs on Minecraft **1.8 through 26.x from a single universal jar** — one download works across every supported version, no separate builds per Minecraft version.\nDownload the latest release: https://github.com/Slimefun5/Slimefun5/releases\nDevelopment builds are produced automatically from the latest commits."
+  },
+  {
+    "key": "alias:download",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1.21",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1.21.1",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1.21.2",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1.21.3",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1.21.4",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1.21.5",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1.21.6",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1.21.7",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1.21.8",
+    "value": "versions"
+  },
+  {
+    "key": "alias:blob",
+    "value": "versions"
+  },
+  {
+    "key": "alias:blobbuilds",
+    "value": "versions"
+  },
+  {
+    "key": "alias:1104",
+    "value": "versions"
+  },
+  {
+    "key": "tag:viaversion",
+    "value": "🏷️ **Machines turning to heads?**\nThere was an issue with ViaVersion where, with the armor-toggle-fix enabled, machines could lose data when placed. It was resolved in a recent ViaVersion build — update to the latest: https://ci.viaversion.com/job/ViaVersion/lastSuccessfulBuild/"
+  },
+  {
+    "key": "tag:mobstacker",
+    "value": "🏷️ **Having problems with mob drops?**\nMob stackers modify drops, and most don't handle custom drops correctly. If you're not getting items like basic circuit boards, consider changing your mob-stacking plugin.\nWe suggest StackMob, where you can set `use-loot-tables` to `false` so custom drops work. (We're not the developers of any stacker plugin — report bugs to the correct author.)"
+  },
+  {
+    "key": "tag:aternos",
+    "value": "🏷️ **Aternos**\nAternos hosts the official Slimefun, not this fork. To run this fork on Aternos, upload the jar manually from https://github.com/Slimefun5/Slimefun5/releases (Aternos lets you upload plugins). Manual installs are on you."
+  },
+  {
+    "key": "tag:backwardscompat",
+    "value": "🏷️ **Backwards compatibility**\nDo you have items older than summer 2019 on your server? If not, you can safely disable `backwards-compatibility` in the config for a small performance improvement."
+  },
+  {
+    "key": "tag:freehost",
+    "value": "🏷️ **You want free hosting?**\n\"You get what you pay for.\" You don't get quality hosting for free. For a small server with friends, a cheap paid host works well; if you're comfortable with Unix/servers, a VPS gives far better performance and flexibility.\nPopular hosts: https://shockbyte.com/ · https://nodecraft.com/ · https://vultr.com/ · https://scaleway.com/\nFree hosts heavily limit resources and often won't let you upload the latest Slimefun/addon jars."
+  },
+  {
+    "key": "tag:log",
+    "value": "🏷️ **Post your server log**\nPlease send your latest log — it helps us spot errors, version mismatches, etc.\nHow: restart your server and reproduce the action, then open the `logs` folder, find `latest.log`, paste its contents into https://pastebin.com/ and send us the URL."
+  },
+  {
+    "key": "alias:logs",
+    "value": "log"
+  },
+  {
+    "key": "tag:cracked",
+    "value": "🏷️ **Cracked server?**\nIf you're running a cracked (offline-mode) server, we won't provide support. We don't support software piracy — please buy the game."
+  },
+  {
+    "key": "alias:piracy",
+    "value": "cracked"
+  },
+  {
+    "key": "tag:bugs",
+    "value": "🏷️ **Found a bug?**\nPlease report it! You can use the in-game bug reporter (Slimefun Guide → Settings → Report a Bug), the `/report` command here on Discord, or open an issue at https://github.com/Slimefun5/Slimefun5/issues\nIf it's an addon bug, report it on that addon's own issue tracker instead."
+  },
+  {
+    "key": "tag:current",
+    "value": "🏷️ **Are my addons up to date?**\nThis fork runs on Minecraft 1.8 through 26.x from one universal jar, and its addons are maintained alongside it. Check the in-game Slimefun Guide → Addons for the latest, or the repositories under https://github.com/Slimefun5 ."
+  },
+  {
+    "key": "tag:bedrock",
+    "value": "🏷️ **Bug on Bedrock Edition?**\nBedrock is not supported. The bridge linking it to Java (Geyser) is still very buggy — please don't report Bedrock bugs to us; we can't fix them. Current limitations: https://wiki.geysermc.org/geyser/current-limitations/"
+  },
+  {
+    "key": "tag:paper",
+    "value": "🏷️ **We recommend Paper!**\nPaper is the recommended server software for Slimefun. It includes many optimizations, and we use its APIs to optimize Slimefun further. If you have lag or just want Slimefun to run smoother, use Paper: https://papermc.io/downloads\nOptimization guide: https://github.com/Slimefun5/Slimefun5/wiki"
+  },
+  {
+    "key": "tag:spark",
+    "value": "🏷️ **Spark**\nPlease run a Spark profile — it lets us pinpoint exactly what's causing lag. Download Spark: https://spark.lucko.me/\nRun `/spark sampler --thread * --timeout 300`, wait 5 minutes, and send us the resulting link."
+  },
+  {
+    "key": "tag:patience",
+    "value": "🏷️ **Please be patient!**\nPeople are usually busy and can't answer immediately. If a good while has passed with no answer, feel free to politely bump your question once. Abuse of pings may result in action."
+  },
+  {
+    "key": "tag:contributing",
+    "value": "🏷️ **Contributing to Slimefun**\nThere are many ways to contribute:\n• Submitting bug reports\n• Helping with translations\n• Contributing to the wiki\n• Fixing bugs\n• Adding unit tests\n• Adding new content\nRead more in our CONTRIBUTING.md on GitHub: https://github.com/Slimefun5/Slimefun5"
+  },
+  {
+    "key": "tag:readme",
+    "value": "🏷️ **Our README**\nYour question may already be answered here:\n• What is Slimefun?\n• Where can I download it?\n• What Minecraft versions does it support?\n• Difference between development and stable builds?\n• Where do I report bugs?\n• Where do I find translations?\n• How can I contribute?\nRead the README: https://github.com/Slimefun5/Slimefun5"
+  },
+  {
+    "key": "tag:steveskin",
+    "value": "🏷️ **Seeing player heads as Steve?**\nA Spigot change once broke player heads. This fork includes a fix — make sure you're on the latest build: https://github.com/Slimefun5/Slimefun5/releases"
+  },
+  {
+    "key": "alias:stevehead",
+    "value": "steveskin"
+  },
+  {
+    "key": "tag:windows-file-access",
+    "value": "🏷️ **Windows file-access issue**\nSeen an error like `AccessDeniedException: ... stored-blocks/world/BLOCK.sfb.tmp -> ... BLOCK.sfb`?\nIt's usually one of two things:\n• File lock — another process is accessing the file\n• File permissions — incorrect permissions on the file\nFix: in the folder (e.g. `data-storage/Slimefun/world`), rename `BLOCK.sfb.tmp` to `BLOCK.sfb`, overwriting the existing file. If you still get an error, fix the file permissions first."
+  },
+  {
+    "key": "tag:singleplayer",
+    "value": "🏷️ **How can I play Slimefun in singleplayer?**\nSlimefun is a plugin, not a mod — a server is required. If you don't have one, you can host a local server on your own computer easily (many tutorials exist online) and still enjoy it solo."
+  },
+  {
+    "key": "tag:segmenting",
+    "value": "🏷️ **Message segmenting**\nPlease don't segment your messages. Don't press Enter multiple times for something that can easily be written as a single message."
+  },
+  {
+    "key": "tag:future",
+    "value": "🏷️ **Future & new Minecraft versions**\nUpstream Slimefun ended development at 1.21.8. This fork continues where it left off: it supports Minecraft **1.8 all the way through 26.x** from a single universal jar — including the versions upstream never reached — and new versions are added as they release.\nDownload: https://github.com/Slimefun5/Slimefun5/releases"
+  },
+  {
+    "key": "alias:26.1",
+    "value": "future"
+  },
+  {
+    "key": "alias:1.21.9",
+    "value": "future"
+  },
+  {
+    "key": "alias:1.21.10",
+    "value": "future"
+  },
+  {
+    "key": "alias:1.21.11",
+    "value": "future"
+  },
+  {
+    "key": "tag:backpack",
+    "value": "🏷️ **Backpack info**\nBackpack data is stored in the player's Slimefun data file at `data-storage/Slimefun/Players/<player-uuid>.dat`.\nTo recover a lost backpack, use `/sf backpack <player-name> <backpack-id>`. IDs start at 0. The restored backpack is a recovery tool, not a replacement — the ID is tied to the first player who opened it."
+  },
+  {
+    "key": "tag:ask",
+    "value": "🏷️ **Please just ask your question**\nDon't ask if you can ask, or ask if anyone can help — just say what you're having trouble with. It saves everyone time."
+  },
+  {
+    "key": "tag:doesnt-work",
+    "value": "🏷️ **Please define \"it doesn't work\"**\n\"It doesn't work\" tells us nothing about the actual problem. Tell us:\n• What happens?\n• What doesn't happen?\n• What did you expect to happen?\n• Did you get an error message?\n• …and more\nProvide as much information as possible — without it, we can't help."
+  }
+]

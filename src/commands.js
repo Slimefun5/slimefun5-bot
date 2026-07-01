@@ -108,19 +108,7 @@ export const commands = {
       const name = tagName(ctx.getString('name'));
 
       if (ctx.subcommand === 'list') {
-        const names = (await ctx.store.list('tag:')).map((k) => k.slice(4)).sort();
-        if (!names.length) return 'No tags yet.';
-        const aliasKeys = await ctx.store.list('alias:');
-        const aliasesByTarget = {};
-        for (const key of aliasKeys) {
-          const target = tagName(await ctx.store.get(key));
-          (aliasesByTarget[target] ||= []).push(key.slice(6));
-        }
-        const lines = names.map((n) => {
-          const aliases = aliasesByTarget[n];
-          return `\`${n}\`` + (aliases?.length ? ` (${aliases.map((a) => `\`${a}\``).join(', ')})` : '');
-        });
-        return `Available tags (${names.length}):\n` + lines.join(', ');
+        return await formatTagList(ctx.store);
       }
       if (ctx.subcommand === 'get') {
         if (!name) return 'Please give a tag name.';
@@ -201,6 +189,23 @@ export const commands = {
 /** Normalizes a tag name to a safe, lowercase key fragment. */
 function tagName (raw) {
   return (raw || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+}
+
+/** Formats the full tag list (with aliases grouped under each tag) for `/tag list` and `?help`. */
+export async function formatTagList (store) {
+  if (!store) return '⚠️ Tag storage is not configured yet (no KV namespace bound).';
+  const names = (await store.list('tag:')).map((k) => k.slice(4)).sort();
+  if (!names.length) return 'No tags yet.';
+  const aliasesByTarget = {};
+  for (const key of await store.list('alias:')) {
+    const target = tagName(await store.get(key));
+    (aliasesByTarget[target] ||= []).push(key.slice(6));
+  }
+  const lines = names.map((name) => {
+    const aliases = aliasesByTarget[name];
+    return `\`?${name}\`` + (aliases?.length ? ` (${aliases.map((a) => `\`?${a}\``).join(', ')})` : '');
+  });
+  return `**Available tags (${names.length}):**\n` + lines.join(', ');
 }
 
 /** Resolves a tag name to its content, following one alias hop; returns null if unknown. */
