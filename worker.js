@@ -69,7 +69,7 @@ async function handleReport (request, env) {
   const plugins = pluginList(body.plugins);
   if (!title && !description) return json({ error: 'empty_report' }, 400);
 
-  const meta = `**Player:** ${clean(body.player, 80) || 'unknown'}  **Slimefun:** ${clean(body.sfVersion, 80) || '?'}  **MC:** ${clean(body.mcVersion, 80) || '?'}`;
+  const meta = `**By:** ${clean(body.player, 80) || 'unknown'} (${clean(body.reporter, 40) || 'Player'})  **Slimefun:** ${clean(body.sfVersion, 80) || '?'}  **MC:** ${clean(body.mcVersion, 80) || '?'}`;
   const ok = await postReportTo(env.DISCORD_WEBHOOK_URL, { title, description, plugins, meta });
   return ok ? json({ ok: true, via: 'worker' }, 200) : json({ error: 'discord_failed' }, 502);
 }

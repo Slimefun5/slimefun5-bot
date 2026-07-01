@@ -291,9 +291,11 @@ http.createServer((req, res) => {
       const body = JSON.parse(data || '{}');
 
       if (req.url === '/report') {
-        const meta = `**Player:** ${body.player || 'unknown'}  **Slimefun:** ${body.sfVersion || '?'}  **MC:** ${body.mcVersion || '?'}`;
-        const ok = await postReport({ title: body.title, description: body.description, plugins: body.plugins, meta });
-        send(res, ok ? 200 : 502, { ok });
+        // Ack immediately so the Worker never times out (which would make it post a duplicate);
+        // deliver to Discord asynchronously afterwards.
+        send(res, 200, { ok: true });
+        const meta = `**By:** ${body.player || 'unknown'} (${body.reporter || 'Player'})  **Slimefun:** ${body.sfVersion || '?'}  **MC:** ${body.mcVersion || '?'}`;
+        postReport({ title: body.title, description: body.description, plugins: body.plugins, meta }).catch(() => {});
       } else if (req.url === '/interactions') {
         const response = await handleInteraction(body, { env, postReport });
         send(res, 200, response);
